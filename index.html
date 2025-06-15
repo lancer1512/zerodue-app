@@ -388,15 +388,15 @@
         import { getFirestore, doc, onSnapshot, collection, addDoc, getDocs, deleteDoc, updateDoc, serverTimestamp, query, where, writeBatch, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- GLOBAL VARIABLES & CONFIG ---
-        const firebaseConfig = {
-          apiKey: "AIzaSyDivduUm70VXocJDPEa1mcFHKXHJsarJmM",
-          authDomain: "zerodue-fd80c.firebaseapp.com",
-          projectId: "zerodue-fd80c",
-          storageBucket: "zerodue-fd80c.firebasestorage.app",
-          messagingSenderId: "1071638541707",
-          appId: "1:1071638541707:web:c7272c33efc51df6e76b8e",
-          measurementId: "G-CVPKVT8KQE"
-        };
+        const firebaseConfig = const firebaseConfig = {
+  apiKey: "AIzaSyDivduUm70VXocJDPEa1mcFHKXHJsarJmM",
+  authDomain: "zerodue-fd80c.firebaseapp.com",
+  projectId: "zerodue-fd80c",
+  storageBucket: "zerodue-fd80c.firebasestorage.app",
+  messagingSenderId: "1071638541707",
+  appId: "1:1071638541707:web:c7272c33efc51df6e76b8e",
+  measurementId: "G-CVPKVT8KQE"
+};
         
         let app, auth, db, userId = null, unsubscribeBills = null, unsubscribeTemplates = null, unsubscribeAccounts = null, unsubscribeGoals = null, unsubscribeBudgets = null, unsubscribeTransactions = null;
         let allBills = [], allTemplates = [], allAccounts = [], allGoals = [], allBudgets = [], allTransactions = [];
