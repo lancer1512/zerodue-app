@@ -388,7 +388,7 @@
         import { getFirestore, doc, onSnapshot, collection, addDoc, getDocs, deleteDoc, updateDoc, serverTimestamp, query, where, writeBatch, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- GLOBAL VARIABLES & CONFIG ---
-        const firebaseConfig = {
+        const firebaseConfig = const firebaseConfig = {
   apiKey: "AIzaSyDivduUm70VXocJDPEa1mcFHKXHJsarJmM",
   authDomain: "zerodue-fd80c.firebaseapp.com",
   projectId: "zerodue-fd80c",
@@ -513,10 +513,10 @@
                 name: form.transactionName.value.trim(),
                 amount: type === 'expense' ? -amount : amount,
                 category: form.transactionCategory.value,
-                date: new Date(form.transactionDate.value + 'T00:00:00'),
+                date: serverTimestamp(), // Use server timestamp
                 type: type === 'expense' ? 'Manual Expense' : 'Manual Income',
             };
-            if (!transaction.name || !transaction.amount || !transaction.category || !transaction.date) return;
+            if (!transaction.name || !transaction.amount || !transaction.category) return;
             try {
                 await addDoc(collection(db, `artifacts/${appId}/users/${userId}/transactions`), transaction);
                 closeAddTransactionModal();
@@ -601,7 +601,7 @@
             showConfirmationModal('Confirm Deletion', message, 'bg-red-600 hover:bg-red-700', async() => {
                 try {
                     await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/${collectionName}`, id));
-                    // Also delete related transactions
+                    // Also delete related transactions if they exist
                      const q = query(collection(db, `artifacts/${appId}/users/${userId}/transactions`), where("relatedId", "==", id));
                     const querySnapshot = await getDocs(q);
                     const batch = writeBatch(db);
