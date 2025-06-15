@@ -388,7 +388,7 @@
         import { getFirestore, doc, onSnapshot, collection, addDoc, getDocs, deleteDoc, updateDoc, serverTimestamp, query, where, writeBatch, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- GLOBAL VARIABLES & CONFIG ---
-        const firebaseConfig = const firebaseConfig = {
+        const firebaseConfig = {
   apiKey: "AIzaSyDivduUm70VXocJDPEa1mcFHKXHJsarJmM",
   authDomain: "zerodue-fd80c.firebaseapp.com",
   projectId: "zerodue-fd80c",
@@ -397,11 +397,6 @@
   appId: "1:1071638541707:web:c7272c33efc51df6e76b8e",
   measurementId: "G-CVPKVT8KQE"
 };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-bill-tracker';
-        const CATEGORIES = [
-            'Utilities', 'Rent/Mortgage', 'Groceries', 'Auto', 'Insurance', 'Medical', 
-            'Debt Payment', 'Personal Care', 'Entertainment', 'Education', 'Subscription', 'Other'
-        ];
         
         let app, auth, db, userId = null, unsubscribeBills = null, unsubscribeTemplates = null, unsubscribeAccounts = null, unsubscribeGoals = null, unsubscribeBudgets = null, unsubscribeTransactions = null;
         let allBills = [], allTemplates = [], allAccounts = [], allGoals = [], allBudgets = [], allTransactions = [];
