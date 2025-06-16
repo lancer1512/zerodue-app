@@ -120,6 +120,7 @@
                     <button data-tab="budgets" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-piggy-bank w-6 text-center"></i>Budgets</button>
                     <button data-tab="recurring" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-sync-alt w-6 text-center"></i>Recurring</button>
                     <button data-tab="reporting" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-file-alt w-6 text-center"></i>Reporting</button>
+                    <button data-tab="settings" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-cog w-6 text-center"></i>Settings</button>
                 </nav>
 
                 <!-- Tab Content Area -->
@@ -256,6 +257,15 @@
                              <p id="reportError" class="text-red-500 text-sm mt-2 hidden"></p>
                          </div>
                     </div>
+                    
+                    <!-- Tab Content: Settings -->
+                     <div id="settingsContent" class="tab-content animated-item">
+                        <div class="bg-white p-6 rounded-xl shadow-md">
+                             <h2 class="text-2xl font-semibold mb-4">Account Settings</h2>
+                            <div id="accountInfo" class="space-y-4"></div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -384,7 +394,7 @@
     <!-- Firebase and App Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, linkWithCredential, EmailAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, collection, addDoc, getDocs, deleteDoc, updateDoc, serverTimestamp, query, where, writeBatch, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- GLOBAL VARIABLES & CONFIG ---
@@ -445,6 +455,7 @@
             transactionsList: document.getElementById('transactionsList'), noTransactionsMessage: document.getElementById('noTransactionsMessage'),
             calendarGrid: document.getElementById('calendarGrid'), calendarMonthYear: document.getElementById('calendarMonthYear'),
             prevMonthBtn: document.getElementById('prevMonthBtn'), nextMonthBtn: document.getElementById('nextMonthBtn'),
+            accountInfo: document.getElementById('accountInfo'),
         };
         
         // --- INITIALIZATION ---
@@ -473,13 +484,13 @@
                     listenForGoals();
                     listenForBudgets();
                     listenForTransactions();
+                    renderAccountInfo();
                 } else { DOMElements.authStatusEl.textContent = "Authenticating..."; await signIn(); }
             });
         }
         async function signIn() {
-            try {
-                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                if (token) await signInWithCustomToken(auth, token); else await signInAnonymously(auth);
+             try {
+                await signInAnonymously(auth);
             } catch (error) { console.error("Authentication failed:", error); DOMElements.authStatusEl.textContent = "Authentication failed."; DOMElements.loader.classList.add('hidden'); }
         }
 
@@ -811,7 +822,60 @@
         function closeEditModal(){DOMElements.editBillModal.classList.add("hidden")}
         function showConfirmationModal(e,t,a,o){const n=DOMElements.confirmationModal;n.innerHTML=`<div class="modal-content"><h3 class="text-lg font-bold">${e}</h3><p class="my-4">${t}</p><div class="flex justify-end space-x-4"><button id="modalCancel" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button><button id="modalConfirm" class="px-4 py-2 text-white rounded-md ${a}">Confirm</button></div></div>`;const r=()=>{n.innerHTML="",n.classList.add("hidden")};n.classList.remove("hidden"),n.querySelector("#modalConfirm").addEventListener("click",()=>{o(),r()}),n.querySelector("#modalCancel").addEventListener("click",r)}
         async function showPaymentHistory(e){const t=DOMElements.paymentHistoryModal;t.querySelector("#historyModalTitle").textContent=`History for ${e.name}`,t.querySelector("#historyModalBody").innerHTML='<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-2xl text-blue-500"></i></div>',t.classList.remove("hidden");let a="<p class=\"text-gray-500\">No payment history found.</p>",o=[];if(e.parentTemplateId){const t=query(collection(db,`artifacts/${appId}/users/${userId}/bills`),where("parentTemplateId","==",e.parentTemplateId),where("paid","==",!0)),n=await getDocs(t);n.forEach(e=>o.push(e.data())),o.sort((e,t)=>t.paidAt.toMillis()-e.paidAt.toMillis())}else e.paid&&o.push(e);if(o.length>0){a='<ul class="space-y-3">';for(const e of o)a+=`<li class="flex justify-between items-center bg-gray-50 p-3 rounded-md"><div><p class="font-semibold">${formatCurrency(e.amount)}</p><p class="text-sm text-gray-500">Due: ${new Date(e.dueDate+"T00:00:00").toLocaleDateString()}</p></div><p class="text-sm text-green-600 font-medium">Paid on ${e.paidAt.toDate().toLocaleDateString()}</p></li>`;a+="</ul>"}t.querySelector("#historyModalBody").innerHTML=a}
-        
+        function renderAccountInfo() {
+            const user = auth.currentUser;
+            const container = DOMElements.accountInfo;
+
+            if (!user) {
+                container.innerHTML = '<p>Loading account details...</p>';
+                return;
+            }
+
+            if (user.isAnonymous) {
+                container.innerHTML = `
+                    <p class="text-gray-600">Your data is currently stored anonymously on this device. Create a permanent account to save your data and access it from anywhere.</p>
+                    <form id="accountUpgradeForm" class="space-y-4">
+                        <div>
+                            <label for="accountEmail" class="block text-sm font-medium">Email</label>
+                            <input type="email" id="accountEmail" required class="mt-1 block w-full input-field">
+                        </div>
+                        <div>
+                            <label for="accountPassword" class="block text-sm font-medium">Password (min. 6 characters)</label>
+                            <input type="password" id="accountPassword" required class="mt-1 block w-full input-field">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700">Save Account</button>
+                        <p id="upgradeError" class="text-red-500 text-sm mt-2 hidden"></p>
+                    </form>
+                `;
+                document.getElementById('accountUpgradeForm').addEventListener('submit', handleAccountUpgrade);
+            } else {
+                container.innerHTML = `
+                    <p class="text-gray-600">You are logged in as:</p>
+                    <p class="font-semibold text-lg break-words">${user.email}</p>
+                    <button id="logOutBtn" class="mt-4 w-full bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700">Log Out</button>
+                `;
+                document.getElementById('logOutBtn').addEventListener('click', () => signOut(auth));
+            }
+        }
+        async function handleAccountUpgrade(e) {
+            e.preventDefault();
+            const form = e.target;
+            const email = form.accountEmail.value;
+            const password = form.accountPassword.value;
+            const errorEl = document.getElementById('upgradeError');
+            errorEl.classList.add('hidden');
+
+            try {
+                const credential = EmailAuthProvider.credential(email, password);
+                await linkWithCredential(auth.currentUser, credential);
+                alert("Account successfully upgraded! You can now log in on any device with this email and password.");
+                renderAccountInfo(); 
+            } catch (error) {
+                console.error("Error linking credential:", error);
+                errorEl.textContent = error.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
         // --- EVENT LISTENERS & UI ---
         function setupEventListeners() {
             DOMElements.tabs.forEach(tab => {
