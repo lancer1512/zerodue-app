@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZeroDue</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Canvas-Confetti for celebrations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* A lighter gray */
+        }
+        .tab {
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            justify-content: flex-start; /* Align text to the left */
+        }
+        .tab.active {
+            background-color: #3b82f6; /* blue-600 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 50;
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            background-color: white; padding: 2rem; border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 90%; width: 450px;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-backdrop:not(.hidden) .modal-content {
+            transform: scale(1);
+        }
+        .hidden { display: none; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animated-item { animation: fadeIn 0.4s ease-out forwards; }
+        .input-field {
+             border: 1px solid #d1d5db;
+             border-radius: 0.375rem;
+             padding: 0.5rem 0.75rem;
+             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .goal-card.completed .progress-bar {
+            background-color: #16a34a; /* green-600 */
+        }
+        .progress-bar-container {
+            position: relative;
+            height: 1.25rem;
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .progress-bar-inner {
+            position: absolute;
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
+        }
+         /* Collapsible Sidebar Styles */
+        #sidebarNav, #mainContentArea {
+            transition: all 0.3s ease-in-out;
+        }
+        body.sidebar-collapsed #sidebarNav {
+            width: 5rem;
+        }
+        body.sidebar-collapsed #sidebarNav .nav-text, body.sidebar-collapsed #sidebarNav .app-title {
+            display: none;
+        }
+        body.sidebar-collapsed #sidebarNav .tab {
+            justify-content: center;
+        }
+         body.sidebar-collapsed #sidebarToggle i {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <div id="app">
+        <div id="loader" class="text-center py-16">
+            <i class="fas fa-spinner fa-spin text-5xl text-blue-500"></i>
+            <p class="mt-4 text-gray-500">Loading your financial data...</p>
+        </div>
+        <!-- Auth Screen -->
+        <div id="authScreen" class="min-h-screen bg-gray-100 flex-col justify-center items-center p-4 hidden">
+            <div class="max-w-md w-full bg-white p-8 rounded-xl shadow-lg">
+                <h1 class="text-3xl font-bold text-gray-900 flex items-center justify-center mb-4">
+                   <i class="fas fa-file-invoice-dollar text-blue-600 mr-2"></i>
+                   ZeroDue
+                </h1>
+                <div id="authContainer">
+                    <!-- Login/Signup Forms will be rendered here by JS -->
+                </div>
+                <div class="mt-4 text-center">
+                     <button id="anonSignInBtn" class="text-sm text-blue-600 hover:underline">Continue Anonymously</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App Container (Initially Hidden) -->
+        <div id="appContainer" class="hidden">
+             <div class="flex">
+                    <!-- Tabs Navigation (Left Sidebar) -->
+                    <nav id="sidebarNav" class="w-64 bg-white p-4 rounded-lg shadow-sm flex flex-col h-screen">
+                        <div class="flex items-center justify-between mb-6">
+                            <h1 class="text-2xl font-bold text-gray-900 flex items-center app-title">
+                               <i class="fas fa-file-invoice-dollar text-blue-600 mr-2"></i>
+                               ZeroDue
+                            </h1>
+                            <button id="sidebarToggle" class="p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-md">
+                                <i class="fas fa-angle-double-left"></i>
+                            </button>
+                        </div>
+                        <div class="flex-grow space-y-2">
+                            <button data-tab="dashboard" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-chart-pie w-6 text-center"></i><span class="nav-text">Dashboard</span></button>
+                            <button data-tab="transactions" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-exchange-alt w-6 text-center"></i><span class="nav-text">Transactions</span></button>
+                            <button data-tab="bills" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-tasks w-6 text-center"></i><span class="nav-text">Manage Bills</span></button>
+                            <button data-tab="accounts" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-university w-6 text-center"></i><span class="nav-text">Accounts</span></button>
+                            <button data-tab="goals" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-bullseye w-6 text-center"></i><span class="nav-text">Goals</span></button>
+                            <button data-tab="budgets" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-piggy-bank w-6 text-center"></i><span class="nav-text">Budgets</span></button>
+                            <button data-tab="recurring" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-sync-alt w-6 text-center"></i><span class="nav-text">Recurring</span></button>
+                            <button data-tab="reporting" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-file-alt w-6 text-center"></i><span class="nav-text">Reporting</span></button>
+                            <button data-tab="settings" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-cog w-6 text-center"></i><span class="nav-text">Settings</span></button>
+                        </div>
+                         <div id="authStatus" class="mt-4 text-xs text-gray-400 text-center nav-text">Connecting...</div>
+                    </nav>
+
+                    <!-- Tab Content Area -->
+                    <div id="mainContentArea" class="flex-1 p-8 overflow-y-auto h-screen">
+                         <!-- Tab Content: Dashboard -->
+                        <div id="dashboardContent" class="tab-content animated-item">
+                             <section class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div class="bg-white p-6 rounded-xl shadow-md"> <h3 class="font-semibold text-gray-700">Total Income (This Month)</h3> <p id="totalIncome" class="text-4xl font-bold text-green-600">$0.00</p> </div>
+                                    <div class="bg-white p-6 rounded-xl shadow-md"> <h3 class="font-semibold text-gray-700">Total Spent (This Month)</h3> <p id="totalSpent" class="text-4xl font-bold text-red-600">$0.00</p> </div>
+                                    <div class="bg-white p-6 rounded-xl shadow-md"> <h3 class="font-semibold text-gray-700">Net Balance (This Month)</h3> <p id="netBalance" class="text-4xl font-bold text-gray-800">$0.00</p> </div>
+                                </div>
+                                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <button id="prevMonthBtn" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-left"></i></button>
+                                            <h2 id="calendarMonthYear" class="text-2xl font-semibold"></h2>
+                                            <button id="nextMonthBtn" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-right"></i></button>
+                                        </div>
+                                        <div class="grid grid-cols-7 gap-1 text-center font-semibold text-gray-600">
+                                            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                                        </div>
+                                        <div id="calendarGrid" class="grid grid-cols-7 gap-1 mt-2"></div>
+                                    </div>
+                                    <div class="bg-white p-6 rounded-xl shadow-md">
+                                        <h2 class="text-2xl font-semibold mb-4">Notifications</h2>
+                                        <div id="notificationsList" class="space-y-3"></div>
+                                        <p id="noNotifications" class="text-sm text-gray-500 text-center p-4 bg-gray-50 rounded-md">No bills are due soon. You're all caught up!</p>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-6 rounded-xl shadow-md">
+                                    <h2 class="text-2xl font-semibold mb-4">Analytics</h2>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div> <h3 class="text-lg font-medium text-center mb-2">Spending by Category (This Month)</h3> <canvas id="categoryChart"></canvas> </div>
+                                        <div> <h3 class="text-lg font-medium text-center mb-2">Monthly Spending (Last 6 Months)</h3> <canvas id="spendingChart"></canvas> </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- Other Tab Contents... -->
+                         <div id="transactionsContent" class="tab-content animated-item">
+                            <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <div class="flex justify-between items-center mb-6">
+                                    <div><h2 class="text-2xl font-semibold">All Transactions</h2><p class="text-gray-500">A complete history of your income and expenses.</p></div>
+                                    <button id="addTransactionBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add Manual Transaction"> <i class="fas fa-plus"></i> </button>
+                                 </div>
+                                 <div id="transactionsList" class="space-y-2"></div>
+                                 <p id="noTransactionsMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You don't have any transactions yet.</p>
+                            </div>
+                        </div>
+
+                        <div id="billsContent" class="tab-content animated-item">
+                            <div class="bg-white p-4 rounded-xl shadow-md mb-8">
+                                <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">Search & Add Bill</label>
+                                <div class="flex items-center gap-4">
+                                    <div class="relative flex-grow">
+                                        <div class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"><i class="fas fa-search text-gray-400"></i></div>
+                                        <input type="search" id="searchInput" placeholder="Search by name or category..." class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md">
+                                    </div>
+                                    <button id="addBillBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add New Bill">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                                <section id="upcomingBillsSection"> <h2 class="text-2xl font-semibold mb-4">Upcoming Bills</h2> <div id="upcomingBillsList" class="space-y-4"></div> <p id="noUpcomingBills" class="text-center text-gray-500 py-6 bg-white rounded-lg shadow-sm">No upcoming bills!</p> </section>
+                                <section id="paidBillsSection"> <h2 class="text-2xl font-semibold mb-4">Paid Bills</h2> <div id="paidBillsList" class="space-y-4"></div> <p id="noPaidBills" class="text-center text-gray-500 py-6 bg-white rounded-lg shadow-sm">No paid bills yet.</p> </section>
+                            </div>
+                            <p id="noResultsMessage" class="hidden text-center text-gray-500 py-6 bg-white rounded-lg shadow-sm mt-8">No bills match your search.</p>
+                        </div>
+                        
+                        <div id="accountsContent" class="tab-content animated-item">
+                             <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <div class="flex justify-between items-center mb-6">
+                                    <div> <h2 class="text-2xl font-semibold">Manage Income Sources</h2> <p class="text-gray-500">Add or remove your accounts and sources of income.</p> </div>
+                                    <button id="addAccountBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add Income Source"> <i class="fas fa-plus"></i> </button>
+                                 </div>
+                                 <div id="accountsList" class="space-y-4"></div>
+                                 <p id="noAccountsMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You have not added any income sources yet.</p>
+                            </div>
+                        </div>
+
+                        <div id="goalsContent" class="tab-content animated-item">
+                             <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <div class="flex justify-between items-center mb-6">
+                                    <div> <h2 class="text-2xl font-semibold">Financial Goals</h2> <p class="text-gray-500">Set and track progress toward your savings goals.</p> </div>
+                                    <button id="addGoalBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add New Goal"> <i class="fas fa-plus"></i> </button>
+                                 </div>
+                                 <div id="goalsList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                                 <p id="noGoalsMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You haven't set any goals yet.</p>
+                            </div>
+                        </div>
+                        
+                        <div id="budgetsContent" class="tab-content animated-item">
+                             <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <div class="flex justify-between items-center mb-6">
+                                    <div> <h2 class="text-2xl font-semibold">Monthly Budgets</h2> <p class="text-gray-500">Set spending limits for categories.</p> </div>
+                                    <button id="addBudgetBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add New Budget"> <i class="fas fa-plus"></i> </button>
+                                 </div>
+                                 <div id="budgetsList" class="space-y-4"></div>
+                                 <p id="noBudgetsMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You haven't set any budgets yet.</p>
+                            </div>
+                        </div>
+
+                        <div id="recurringContent" class="tab-content animated-item">
+                            <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <div class="flex justify-between items-center mb-6">
+                                    <div> <h2 class="text-2xl font-semibold">Manage Recurring Bill Templates</h2> <p class="text-gray-500">These templates automatically generate your monthly bills.</p> </div>
+                                    <button id="addRecurringTemplateBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add Recurring Template"> <i class="fas fa-plus"></i> </button>
+                                 </div>
+                                 <div id="recurringTemplatesList" class="space-y-4"></div>
+                                 <p id="noTemplatesMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You have not set up any recurring bills yet.</p>
+                            </div>
+                        </div>
+                        
+                        <div id="reportingContent" class="tab-content animated-item">
+                             <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <h2 class="text-2xl font-semibold mb-4">Generate Report</h2>
+                                 <p class="text-gray-500 mb-6">Select a date range to generate a printable report of all paid bills.</p>
+                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                     <div> <label for="startDate" class="block text-sm font-medium text-gray-700">Start Date</label> <input type="date" id="startDate" name="startDate" required class="mt-1 block w-full input-field"> </div>
+                                     <div> <label for="endDate" class="block text-sm font-medium text-gray-700">End Date</label> <input type="date" id="endDate" name="endDate" required class="mt-1 block w-full input-field"> </div>
+                                     <button id="generateReportBtn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 flex items-center justify-center gap-2"> <i class="fas fa-print"></i> Generate Report </button>
+                                 </div>
+                                 <p id="reportError" class="text-red-500 text-sm mt-2 hidden"></p>
+                             </div>
+                        </div>
+                        
+                         <div id="settingsContent" class="tab-content animated-item">
+                            <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <h2 class="text-2xl font-semibold mb-4">Account Settings</h2>
+                                <div id="accountInfo" class="space-y-4"></div>
+                            </div>
+                        </div>
+                </div>
+            </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="addBillModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+             <div class="flex justify-between items-center mb-4">
+                <h3 id="addBillModalTitle" class="text-xl font-bold">Add New Bill</h3>
+                <button id="addBillModalClose" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>
+            <form id="addBillForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2"> <label for="billName" class="block text-sm font-medium">Bill Name</label> <input type="text" id="billName" name="billName" required class="mt-1 block w-full input-field"> </div>
+                    <div> <label for="billCategory" class="block text-sm font-medium">Category</label> <select id="billCategory" name="billCategory" required class="mt-1 block w-full input-field"></select> </div>
+                    <div> <label for="billAmount" class="block text-sm font-medium">Amount</label> <div class="relative mt-1"> <div class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"><span class="text-gray-500">$</span></div> <input type="number" id="billAmount" name="billAmount" required min="0.01" step="0.01" class="block w-full pl-7 pr-3 input-field"> </div> </div>
+                    <div> <label for="dueDate" class="block text-sm font-medium">First/Next Due Date</label> <input type="date" id="dueDate" name="dueDate" required class="mt-1 block w-full input-field"> </div>
+                    <div class="flex items-center justify-center"> <div class="flex items-center h-full mt-6"> <input id="isRecurring" name="isRecurring" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"> <label for="isRecurring" class="ml-2 block text-sm">This is a recurring bill</label> </div> </div>
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700">Save Bill</button>
+            </form>
+        </div>
+    </div>
+    <div id="addAccountModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Add Income Source</h3>
+                <button id="addAccountModalClose" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>
+            <form id="addAccountForm" class="space-y-4">
+                <div> <label for="accountName" class="block text-sm font-medium">Source Name</label> <input type="text" id="accountName" name="accountName" placeholder="e.g., Paycheck, Side Hustle" required class="mt-1 block w-full input-field"> </div>
+                <div> <label for="accountAmount" class="block text-sm font-medium">Amount</label> <div class="relative mt-1"> <div class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"><span class="text-gray-500">$</span></div> <input type="number" id="accountAmount" name="accountAmount" placeholder="2500.00" required min="0.01" step="0.01" class="block w-full pl-7 pr-3 input-field"> </div> </div>
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700">Save Source</button>
+            </form>
+        </div>
+    </div>
+     <div id="addGoalModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Create New Goal</h3>
+                <button id="addGoalModalClose" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>
+            <form id="addGoalForm" class="space-y-4">
+                <div> <label for="goalName" class="block text-sm font-medium">Goal Name</label> <input type="text" id="goalName" name="goalName" placeholder="e.g., Vacation, New Car" required class="mt-1 block w-full input-field"> </div>
+                <div> <label for="goalAmount" class="block text-sm font-medium">Target Amount</label> <div class="relative mt-1"> <div class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"><span class="text-gray-500">$</span></div> <input type="number" id="goalAmount" name="goalAmount" placeholder="5000.00" required min="1" step="0.01" class="block w-full pl-7 pr-3 input-field"> </div> </div>
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700">Create Goal</button>
+            </form>
+        </div>
+    </div>
+    <div id="addBudgetModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Set Category Budget</h3>
+                <button id="addBudgetModalClose" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>
+            <form id="addBudgetForm" class="space-y-4">
+                <div> <label for="budgetCategory" class="block text-sm font-medium">Category</label> <select id="budgetCategory" name="budgetCategory" required class="mt-1 block w-full input-field"></select> </div>
+                <div> <label for="budgetAmount" class="block text-sm font-medium">Budget Amount</label> <div class="relative mt-1"> <div class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"><span class="text-gray-500">$</span></div> <input type="number" id="budgetAmount" name="budgetAmount" placeholder="500.00" required min="1" step="0.01" class="block w-full pl-7 pr-3 input-field"> </div> </div>
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700">Set Budget</button>
+            </form>
+        </div>
+    </div>
+     <div id="contributeGoalModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Contribute to Goal</h3>
+                <button id="contributeGoalModalClose" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>
+            <form id="contributeGoalForm" class="space-y-4">
+                <input type="hidden" id="contributeGoalId">
+                <div> <label for="contributionAmount" class="block text-sm font-medium">Amount to Add</label> <div class="relative mt-1"> <div class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"><span class="text-gray-500">$</span></div> <input type="number" id="contributionAmount" name="contributionAmount" placeholder="100.00" required min="0.01" step="0.01" class="block w-full pl-7 pr-3 input-field"> </div> </div>
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700">Add Funds</button>
+            </form>
+        </div>
+    </div>
+    <div id="addTransactionModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Add Manual Transaction</h3>
+                <button id="addTransactionModalClose" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>
+            <form id="addTransactionForm" class="space-y-4">
+                <div> <label for="transactionName" class="block text-sm font-medium">Description</label> <input type="text" id="transactionName" name="transactionName" placeholder="e.g., Lunch with friends" required class="mt-1 block w-full input-field"> </div>
+                <div> <label for="transactionAmount" class="block text-sm font-medium">Amount</label> <div class="relative mt-1"> <div class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"><span class="text-gray-500">$</span></div> <input type="number" id="transactionAmount" name="transactionAmount" placeholder="25.50" required min="0.01" step="0.01" class="block w-full pl-7 pr-3 input-field"> </div> </div>
+                <div> <label for="transactionType" class="block text-sm font-medium">Type</label> <select id="transactionType" name="transactionType" required class="mt-1 block w-full input-field"><option value="expense">Expense</option><option value="income">Income</option></select> </div>
+                <div> <label for="transactionCategory" class="block text-sm font-medium">Category</label> <select id="transactionCategory" name="transactionCategory" required class="mt-1 block w-full input-field"></select> </div>
+                <div> <label for="transactionDate" class="block text-sm font-medium">Date</label> <input type="date" id="transactionDate" name="transactionDate" required class="mt-1 block w-full input-field"> </div>
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700">Save Transaction</button>
+            </form>
+        </div>
+    </div>
+    <div id="confirmationModal" class="modal-backdrop hidden"></div>
+    <div id="editBillModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3 class="text-lg font-bold mb-4">Edit Item</h3>
+            <form id="editBillForm">
+                <input type="hidden" id="editBillId">
+                <div class="space-y-4">
+                    <div> <label for="editBillName" class="block text-sm font-medium text-gray-700">Name</label> <input type="text" id="editBillName" required class="mt-1 block w-full input-field"> </div>
+                    <div> <label for="editBillCategory" class="block text-sm font-medium text-gray-700">Category</label> <select id="editBillCategory" name="editBillCategory" required class="mt-1 block w-full input-field"></select> </div>
+                    <div> <label for="editBillAmount" class="block text-sm font-medium text-gray-700">Amount</label> <div class="relative mt-1"> <div class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"><span class="text-gray-500">$</span></div> <input type="number" id="editBillAmount" required min="0.01" step="0.01" class="block w-full pl-7 pr-3 input-field"> </div> </div>
+                    <div id="editDueDateContainer"> <label for="editDueDate" class="block text-sm font-medium text-gray-700">Due Date</label> <input type="date" id="editDueDate" required class="mt-1 block w-full input-field"> </div>
+                     <div id="editFormError" class="text-red-500 text-sm mt-2 hidden"></div>
+                     <p id="editRecurringWarning" class="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-md hidden">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>You are editing a single instance of a recurring bill. This will not affect future bills.
+                     </p>
+                </div>
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="button" id="editModalCancel" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-md">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="paymentHistoryModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+             <div class="flex justify-between items-center mb-4">
+                <h3 id="historyModalTitle" class="text-xl font-bold">Payment History</h3>
+                <button id="historyModalClose" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>
+            <div id="historyModalBody" class="max-h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+    
+    <!-- Firebase and App Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, linkWithCredential, EmailAuthProvider, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, collection, addDoc, getDocs, deleteDoc, updateDoc, serverTimestamp, query, where, writeBatch, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- GLOBAL VARIABLES & CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDivduUm70VXocJDPEa1mcFHKXHJsarJmM",
+            authDomain: "zerodue-fd80c.firebaseapp.com",
+            projectId: "zerodue-fd80c",
+            storageBucket: "zerodue-fd80c.appspot.com",
+            messagingSenderId: "1071638541707",
+            appId: "1:1071638541707:web:c7272c33efc51df6e76b8e",
+            measurementId: "G-CVPKVT8KQE"
+        };
+        const appId = 'zerodue-fd80c';
+        const CATEGORIES = [
+            'Utilities', 'Rent/Mortgage', 'Groceries', 'Auto', 'Insurance', 'Medical', 
+            'Debt Payment', 'Personal Care', 'Entertainment', 'Education', 'Subscription', 'Other'
+        ];
+        
+        let app, auth, db, userId = null, unsubscribeBills = null, unsubscribeTemplates = null, unsubscribeAccounts = null, unsubscribeGoals = null, unsubscribeBudgets = null, unsubscribeTransactions = null;
+        let allBills = [], allTemplates = [], allAccounts = [], allGoals = [], allBudgets = [], allTransactions = [];
+        let currentSearchTerm = '';
+        let categoryChart = null, spendingChart = null;
+        let calendarDate = new Date();
+
+        // --- DOM Elements ---
+        const DOMElements = {
+            loader: document.getElementById('loader'), mainContent: document.getElementById('appContainer'),
+            authStatusEl: document.getElementById('authStatus'), tabs: document.querySelectorAll('.tab'),
+            unpaidTotalEl: document.getElementById('unpaidTotal'), totalIncomeEl: document.getElementById('totalIncome'), 
+            totalSpentEl: document.getElementById('totalSpent'),
+            netBalanceEl: document.getElementById('netBalance'), addBillBtn: document.getElementById('addBillBtn'), 
+            addRecurringTemplateBtn: document.getElementById('addRecurringTemplateBtn'), addAccountBtn: document.getElementById('addAccountBtn'), 
+            addGoalBtn: document.getElementById('addGoalBtn'), addBudgetBtn: document.getElementById('addBudgetBtn'),
+            addTransactionBtn: document.getElementById('addTransactionBtn'),
+            addBillModal: document.getElementById('addBillModal'), addAccountModal: document.getElementById('addAccountModal'),
+            addGoalModal: document.getElementById('addGoalModal'), addBudgetModal: document.getElementById('addBudgetModal'), 
+            addTransactionModal: document.getElementById('addTransactionModal'),
+            contributeGoalModal: document.getElementById('contributeGoalModal'),
+            addBillModalClose: document.getElementById('addBillModalClose'), addAccountModalClose: document.getElementById('addAccountModalClose'), 
+            addGoalModalClose: document.getElementById('addGoalModalClose'), addBudgetModalClose: document.getElementById('addBudgetModalClose'),
+            addTransactionModalClose: document.getElementById('addTransactionModalClose'),
+            contributeGoalModalClose: document.getElementById('contributeGoalModalClose'),
+            addBillForm: document.getElementById('addBillForm'), addAccountForm: document.getElementById('addAccountForm'), 
+            addGoalForm: document.getElementById('addGoalForm'), addBudgetForm: document.getElementById('addBudgetForm'), 
+            addTransactionForm: document.getElementById('addTransactionForm'),
+            contributeGoalForm: document.getElementById('contributeGoalForm'),
+            searchInput: document.getElementById('searchInput'), upcomingBillsList: document.getElementById('upcomingBillsList'), 
+            paidBillsList: document.getElementById('paidBillsList'), noUpcomingBills: document.getElementById('noUpcomingBills'), 
+            noPaidBills: document.getElementById('noPaidBills'), noResultsMessage: document.getElementById('noResultsMessage'), 
+            recurringTemplatesList: document.getElementById('recurringTemplatesList'), noTemplatesMessage: document.getElementById('noTemplatesMessage'), 
+            accountsList: document.getElementById('accountsList'), noAccountsMessage: document.getElementById('noAccountsMessage'),
+            goalsList: document.getElementById('goalsList'), noGoalsMessage: document.getElementById('noGoalsMessage'), 
+            budgetsList: document.getElementById('budgetsList'), noBudgetsMessage: document.getElementById('noBudgetsMessage'),
+            confirmationModal: document.getElementById('confirmationModal'), editBillModal: document.getElementById('editBillModal'), 
+            paymentHistoryModal: document.getElementById('paymentHistoryModal'), historyModalClose: document.getElementById('historyModalClose'), 
+            editModalCancel: document.getElementById('editModalCancel'), editBillForm: document.getElementById('editBillForm'), 
+            notificationsList: document.getElementById('notificationsList'), noNotifications: document.getElementById('noNotifications'), 
+            generateReportBtn: document.getElementById('generateReportBtn'), reportError: document.getElementById('reportError'),
+            transactionsList: document.getElementById('transactionsList'), noTransactionsMessage: document.getElementById('noTransactionsMessage'),
+            calendarGrid: document.getElementById('calendarGrid'), calendarMonthYear: document.getElementById('calendarMonthYear'),
+            prevMonthBtn: document.getElementById('prevMonthBtn'), nextMonthBtn: document.getElementById('nextMonthBtn'),
+            accountInfo: document.getElementById('accountInfo'),
+            sidebarToggle: document.getElementById('sidebarToggle'),
+            authScreen: document.getElementById('authScreen'),
+            authContainer: document.getElementById('authContainer'),
+            anonSignInBtn: document.getElementById('anonSignInBtn'),
+        };
+        
+        // --- INITIALIZATION ---
+        async function main() {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                await setPersistence(auth, browserLocalPersistence);
+                setupEventListeners();
+                setupAuthentication();
+                populateCategoryDropdowns();
+            } catch (error) { console.error("Firebase initialization failed:", error); DOMElements.authStatusEl.textContent = "Error: Could not connect."; DOMElements.loader.classList.add('hidden'); }
+        }
+
+        // --- AUTHENTICATION ---
+        function setupAuthentication() {
+            onAuthStateChanged(auth, async (user) => {
+                document.getElementById('loader').classList.add('hidden');
+                if (user) {
+                    userId = user.uid;
+                    document.getElementById('authScreen').classList.add('hidden');
+                    document.getElementById('appContainer').classList.remove('hidden');
+                    document.getElementById('authStatus').innerHTML = `<i class="fas fa-check-circle text-green-500"></i> Connected`;
+                    [unsubscribeBills, unsubscribeTemplates, unsubscribeAccounts, unsubscribeGoals, unsubscribeBudgets, unsubscribeTransactions].forEach(unsub => unsub && unsub());
+                    await checkAndGenerateRecurringBills();
+                    listenForBills();
+                    listenForTemplates();
+                    listenForAccounts();
+                    listenForGoals();
+                    listenForBudgets();
+                    listenForTransactions();
+                    renderAccountInfo();
+                } else { 
+                    document.getElementById('appContainer').classList.add('hidden');
+                    document.getElementById('authScreen').classList.remove('hidden');
+                    renderLoginForm();
+                }
+            });
+        }
+        
+        // --- DATA LISTENERS ---
+        function listenForBills() { if (!userId) return; const q = query(collection(db, `artifacts/${appId}/users/${userId}/bills`), where("isTemplate", "!=", true)); unsubscribeBills = onSnapshot(q, (snapshot) => { allBills = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); renderAll(); }, console.error); }
+        function listenForTemplates() { if (!userId) return; const q = query(collection(db, `artifacts/${appId}/users/${userId}/bills`), where("isTemplate", "==", true)); unsubscribeTemplates = onSnapshot(q, (snapshot) => { allTemplates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); renderTemplates(); }, console.error); }
+        function listenForAccounts() { if (!userId) return; const q = query(collection(db, `artifacts/${appId}/users/${userId}/accounts`)); unsubscribeAccounts = onSnapshot(q, (snapshot) => { allAccounts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); renderAll(); }, console.error); }
+        function listenForGoals() { if (!userId) return; const q = query(collection(db, `artifacts/${appId}/users/${userId}/goals`)); unsubscribeGoals = onSnapshot(q, (snapshot) => { allGoals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); renderAll(); }, console.error); }
+        function listenForBudgets() { if (!userId) return; const q = query(collection(db, `artifacts/${appId}/users/${userId}/budgets`)); unsubscribeBudgets = onSnapshot(q, (snapshot) => { allBudgets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); renderAll(); }, console.error); }
+        function listenForTransactions() { if (!userId) return; const q = query(collection(db, `artifacts/${appId}/users/${userId}/transactions`)); unsubscribeTransactions = onSnapshot(q, (snapshot) => { allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); renderAll(); }, console.error); }
+        
+        function renderAll() {
+            filterAndRender();
+            updateDashboard();
+            updateNotifications();
+            renderAccounts();
+            renderGoals();
+            renderBudgets();
+            renderTransactions();
+            renderCalendar();
+        }
+
+        // --- FIRESTORE CRUD ---
+        async function handleAddBill(e){e.preventDefault();const t=new FormData(DOMElements.addBillForm),a=t.get("isRecurring")==="on",o={name:t.get("billName").trim(),category:t.get("billCategory"),amount:parseFloat(t.get("billAmount")),dueDate:t.get("dueDate")};if(!o.name||!o.category||!o.amount||!o.dueDate||o.amount<=0)return;try{const e=collection(db,`artifacts/${appId}/users/${userId}/bills`);a?(await addDoc(e,{...o,isTemplate:!0,nextDueDate:o.dueDate,createdAt:serverTimestamp()}),await checkAndGenerateRecurringBills()):await addDoc(e,{...o,paid:!1,isTemplate:!1,createdAt:serverTimestamp()}),closeAddBillModal()}catch(e){console.error("Error adding bill: ",e)}}
+        async function handleAddAccount(e) { e.preventDefault(); const form = DOMElements.addAccountForm; const newAccount = { name: form.accountName.value.trim(), amount: parseFloat(form.accountAmount.value) }; if (!newAccount.name || !newAccount.amount || newAccount.amount <= 0) return; try { const docRef = await addDoc(collection(db, `artifacts/${appId}/users/${userId}/accounts`), { ...newAccount, createdAt: serverTimestamp() }); await addDoc(collection(db, `artifacts/${appId}/users/${userId}/transactions`), { type: 'Income', name: `${newAccount.name}`, amount: newAccount.amount, date: serverTimestamp(), relatedId: docRef.id }); closeAddAccountModal(); } catch (err) { console.error("Error adding account:", err); } }
+        async function handleAddGoal(e) { e.preventDefault(); const form = DOMElements.addGoalForm; const newGoal = { name: form.goalName.value.trim(), targetAmount: parseFloat(form.goalAmount.value), currentAmount: 0, createdAt: serverTimestamp() }; if (!newGoal.name || !newGoal.targetAmount || newGoal.targetAmount <= 0) return; try { await addDoc(collection(db, `artifacts/${appId}/users/${userId}/goals`), newGoal); closeAddGoalModal(); } catch (err) { console.error("Error adding goal:", err); } }
+        async function handleAddBudget(e) { e.preventDefault(); const form = DOMElements.addBudgetForm; const budgetData = { category: form.budgetCategory.value, amount: parseFloat(form.budgetAmount.value) }; if (!budgetData.category || !budgetData.amount || budgetData.amount <= 0) return; try { const q = query(collection(db, `artifacts/${appId}/users/${userId}/budgets`), where("category", "==", budgetData.category)); const existing = await getDocs(q); if (existing.empty) { await addDoc(collection(db, `artifacts/${appId}/users/${userId}/budgets`), budgetData); } else { await updateDoc(existing.docs[0].ref, { amount: budgetData.amount }); } closeAddBudgetModal(); } catch (err) { console.error("Error adding/updating budget:", err); } }
+        async function handleAddTransaction(e) {
+            e.preventDefault();
+            const form = DOMElements.addTransactionForm;
+            const type = form.transactionType.value;
+            const amount = parseFloat(form.transactionAmount.value);
+            const transaction = {
+                name: form.transactionName.value.trim(),
+                amount: type === 'expense' ? -amount : amount,
+                category: form.transactionCategory.value,
+                date: serverTimestamp(), // Use server timestamp
+                type: type === 'expense' ? 'Manual Expense' : 'Manual Income',
+            };
+            if (!transaction.name || !transaction.amount || !transaction.category) return;
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/transactions`), transaction);
+                closeAddTransactionModal();
+            } catch (err) { console.error("Error adding transaction:", err); }
+        }
+        async function handleContributeToGoal(e) {
+            e.preventDefault();
+            const form = DOMElements.contributeGoalForm;
+            const goalId = form.contributeGoalId.value;
+            const amount = parseFloat(form.contributionAmount.value);
+            if (!goalId || !amount || amount <= 0) return;
+            
+            const goalRef = doc(db, `artifacts/${appId}/users/${userId}/goals`, goalId);
+            const goal = allGoals.find(g => g.id === goalId);
+
+            if (goal && (goal.currentAmount < goal.targetAmount) && (goal.currentAmount + amount >= goal.targetAmount)) {
+                confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+            }
+
+            try {
+                await updateDoc(goalRef, { currentAmount: increment(amount) });
+                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/transactions`), { type: 'Goal Contribution', name: `To "${goal.name}"`, amount: -amount, date: serverTimestamp(), relatedId: goal.id });
+                closeContributeGoalModal();
+            } catch (err) { console.error("Error contributing to goal:", err); }
+        }
+        async function checkAndGenerateRecurringBills(){if(!userId)return;const e=query(collection(db,`artifacts/${appId}/users/${userId}/bills`),where("isTemplate","==",!0)),t=await getDocs(e),a=writeBatch(db),o=new Date;o.setHours(0,0,0,0),t.forEach(t=>{const n=t.data();let r=new Date(n.nextDueDate+"T00:00:00");for(;r<=o;){const e={name:n.name,amount:n.amount,category:n.category,dueDate:n.nextDueDate,paid:!1,isTemplate:!1,parentTemplateId:t.id,createdAt:serverTimestamp()};a.set(doc(collection(db,`artifacts/${appId}/users/${userId}/bills`)),e);let c=new Date(r);c.setMonth(c.getMonth()+1),n.nextDueDate=c.toISOString().split("T")[0],r=c}a.update(t.ref,{nextDueDate:n.nextDueDate})}),await a.commit()}
+        async function handleUpdateBill(e){
+            e.preventDefault();
+            const form = DOMElements.editBillForm;
+            const billId = form.editBillId.value;
+            const item = allBills.find(b => b.id === billId) || allTemplates.find(t => t.id === billId);
+            const isTemplate = item?.isTemplate || false;
+
+            const updatedData = {
+                name: form.editBillName.value.trim(),
+                category: form.editBillCategory.value,
+                amount: parseFloat(form.editBillAmount.value),
+            };
+            if (!isTemplate) {
+                updatedData.dueDate = form.editDueDate.value;
+            }
+
+            const errorEl = DOMElements.editBillModal.querySelector("#editFormError");
+            if(!updatedData.name || !updatedData.category || !updatedData.amount || updatedData.amount <= 0 || (!isTemplate && !updatedData.dueDate)) {
+                errorEl.textContent = "Please fill out all fields with valid data.";
+                errorEl.classList.remove("hidden");
+                return;
+            }
+            
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/bills`, billId);
+                await updateDoc(docRef, updatedData);
+                closeEditModal();
+            } catch(err) {
+                console.error("Error updating item:", err);
+                errorEl.textContent = "Could not save changes. Please try again.";
+                errorEl.classList.remove("hidden");
+            }
+        }
+        async function toggleBillStatus(bill, isPaid){
+            try {
+                const billRef = doc(db,`artifacts/${appId}/users/${userId}/bills`, bill.id);
+                await updateDoc(billRef, { paid: !isPaid, paidAt: isPaid ? null : serverTimestamp() });
+                if (!isPaid) {
+                    await addDoc(collection(db, `artifacts/${appId}/users/${userId}/transactions`), {
+                        type: 'Bill Payment', name: bill.name, amount: -bill.amount, date: serverTimestamp(), relatedId: bill.id 
+                    });
+                } else {
+                    const q = query(collection(db, `artifacts/${appId}/users/${userId}/transactions`), where("relatedId", "==", bill.id));
+                    const querySnapshot = await getDocs(q);
+                    const batch = writeBatch(db);
+                    querySnapshot.forEach((doc) => { batch.delete(doc.ref); });
+                    await batch.commit();
+                }
+            } catch(e){console.error("Error updating bill status:",e)}
+        }
+        async function deleteItem(id, collectionName) {
+            let message = "Are you sure you want to permanently delete this item?";
+            if (collectionName === 'bills' && allTemplates.some(t => t.id === id)) {
+                 message = "This will delete the template and stop future bills. Past bills will not be affected. Continue?";
+            }
+            showConfirmationModal('Confirm Deletion', message, 'bg-red-600 hover:bg-red-700', async() => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/${collectionName}`, id));
+                    // Also delete related transactions if they exist
+                     const q = query(collection(db, `artifacts/${appId}/users/${userId}/transactions`), where("relatedId", "==", id));
+                    const querySnapshot = await getDocs(q);
+                    const batch = writeBatch(db);
+                    querySnapshot.forEach((doc) => { batch.delete(doc.ref); });
+                    await batch.commit();
+                } catch(e) { console.error("Error deleting item: ", e); }
+            });
+        }
+
+        // --- DASHBOARD & CHARTS ---
+        function updateDashboard() { 
+            const thisMonth = new Date().getMonth(); 
+            const thisYear = new Date().getFullYear();
+            
+            const monthlyIncome = allTransactions
+                .filter(t => t.amount > 0 && t.date?.toDate().getMonth() === thisMonth && t.date?.toDate().getFullYear() === thisYear)
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            const totalSpent = allTransactions
+                .filter(t => t.amount < 0 && t.date?.toDate().getMonth() === thisMonth && t.date?.toDate().getFullYear() === thisYear)
+                .reduce((sum, t) => sum - t.amount, 0);
+
+            const netBalance = monthlyIncome - totalSpent;
+            
+            DOMElements.totalIncomeEl.textContent = formatCurrency(monthlyIncome);
+            DOMElements.totalSpentEl.textContent = formatCurrency(totalSpent);
+            DOMElements.netBalanceEl.textContent = formatCurrency(netBalance);
+            DOMElements.netBalanceEl.classList.toggle('text-green-600', netBalance >= 0);
+            DOMElements.netBalanceEl.classList.toggle('text-red-600', netBalance < 0);
+
+            updateCategoryChart(); 
+            updateSpendingChart(); 
+        }
+        function updateCategoryChart() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            const thisMonth = new Date().getMonth(); const thisYear = new Date().getFullYear();
+            const categoryData = allTransactions
+                .filter(t => t.amount < 0 && t.date?.toDate().getMonth() === thisMonth && t.date?.toDate().getFullYear() === thisYear)
+                .reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) - t.amount; return acc; }, {});
+            if (categoryChart) categoryChart.destroy();
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut', data: { labels: Object.keys(categoryData), datasets: [{ data: Object.values(categoryData), backgroundColor: [ '#3B82F6', '#EF4444', '#8B5CF6', '#F59E0B', '#6366F1', '#6B7280', '#10B981', '#F97316', '#EC4899', '#0EA5E9' ], hoverOffset: 4 }] },
+                options: { responsive: true, maintainAspectRatio: true }
+            });
+        }
+        function updateSpendingChart() {
+             const ctx = document.getElementById('spendingChart').getContext('2d');
+             const labels = [], data = [], today = new Date();
+             for (let i = 5; i >= 0; i--) {
+                const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                labels.push(`${d.toLocaleString('default', { month: 'short' })} ${d.getFullYear()}`);
+                const monthExpenses = allTransactions.filter(t => t.amount < 0 && t.date?.toDate().getMonth() === d.getMonth() && t.date?.toDate().getFullYear() === d.getFullYear()).reduce((sum, t) => sum - t.amount, 0);
+                data.push(monthExpenses);
+             }
+             if(spendingChart) spendingChart.destroy();
+             spendingChart = new Chart(ctx, {
+                type: 'bar', data: { labels: labels, datasets: [{ label: 'Total Spending', data: data, backgroundColor: '#3B82F6' }] },
+                options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { callback: value => '$' + value } } } }
+             });
+        }
+        function updateNotifications() {
+            const listEl = DOMElements.notificationsList; listEl.innerHTML = '';
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const sevenDaysFromNow = new Date(today); sevenDaysFromNow.setDate(today.getDate() + 7);
+            const notifications = allBills.filter(bill => !bill.paid && new Date(bill.dueDate + 'T00:00:00') <= sevenDaysFromNow).sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
+            DOMElements.noNotifications.classList.toggle('hidden', notifications.length > 0);
+            notifications.forEach(bill => {
+                const dueDate = new Date(bill.dueDate + 'T00:00:00');
+                const isOverdue = dueDate < today;
+                const daysDiff = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+                let statusText = `Due in ${daysDiff} days`;
+                if(daysDiff === 0) statusText = 'Due today';
+                if(isOverdue) statusText = `Overdue by ${Math.abs(daysDiff)} days`;
+                const colorClass = isOverdue ? 'border-red-500' : 'border-yellow-500';
+                const div = document.createElement('div');
+                div.className = `animated-item border-l-4 ${colorClass} bg-gray-50 p-3 rounded-r-lg`;
+                div.innerHTML = `<div class="flex justify-between items-center"><p class="font-semibold">${bill.name}</p><p class="font-bold">${formatCurrency(bill.amount)}</p></div><p class="text-sm text-gray-600">${statusText}</p>`;
+                listEl.appendChild(div);
+            });
+        }
+
+        // --- UI & RENDERING ---
+        function filterAndRender(){let e=allBills.filter(e=>!e.isTemplate);if(currentSearchTerm){const t=currentSearchTerm.toLowerCase();e=e.filter(e=>e.name.toLowerCase().includes(t)||(e.category&&e.category.toLowerCase().includes(t)))}renderBillLists(e)}
+        function renderBillLists(e){DOMElements.upcomingBillsList.innerHTML="",DOMElements.paidBillsList.innerHTML="";e.sort((e,t)=>new Date(e.dueDate)-new Date(t.dueDate));let o=0,n=0;e.forEach(e=>{const t=createBillElement(e);e.paid?(DOMElements.paidBillsList.prepend(t),n++):(DOMElements.upcomingBillsList.appendChild(t),o++)});DOMElements.noUpcomingBills.classList.toggle("hidden",o>0),DOMElements.noPaidBills.classList.toggle("hidden",n>0);DOMElements.noResultsMessage.classList.toggle("hidden",e.length>0||0===allBills.length)}
+        function createBillElement(e){const t=document.createElement("div");t.className=`animated-item bill-item bg-white p-4 rounded-lg shadow-sm flex items-center justify-between gap-4 ${e.paid?"opacity-70":""}`;const a=new Date(e.dueDate+"T00:00:00"),o=!e.paid&&new Date>a;let n=e.paid&&e.paidAt?`Paid on ${e.paidAt.toDate().toLocaleDateString()}`:`Due on ${a.toLocaleDateString()}`;return t.innerHTML=`<div class="flex items-center gap-4 flex-grow min-w-0"><button class="toggle-status w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full ${e.paid?"bg-green-100 text-green-600":"border-2 border-gray-300"}" title="${e.paid?"Mark as Unpaid":"Mark as Paid"}"><i class="fas ${e.paid?"fa-check":""}"></i></button><div class="truncate"><div class="flex items-center gap-2"><p class="font-semibold text-gray-800 truncate">${e.name}${e.parentTemplateId?`<i class="fas fa-sync-alt text-blue-500 text-xs ml-2" title="Recurring Bill"></i>`:""}</p><span class="text-xs font-medium px-2 py-0.5 rounded-full ${getCategoryClass(e.category)}">${e.category||"Other"}</span></div><p class="text-sm ${o?"text-red-500 font-medium":"text-gray-500"}">${n} ${o?"(Overdue)":""}</p></div></div><div class="flex items-center gap-2 flex-shrink-0"><p class="font-bold text-lg text-gray-800">${formatCurrency(e.amount)}</p><button class="history-btn text-gray-400 hover:text-green-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200" title="Payment History"><i class="fas fa-history"></i></button><button class="edit-btn text-gray-400 hover:text-blue-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200" title="Edit Bill"><i class="fas fa-pencil-alt"></i></button><button class="delete-btn text-gray-400 hover:text-red-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200" title="Delete Bill"><i class="fas fa-trash-alt"></i></button></div>`,t.querySelector(".toggle-status").addEventListener("click",()=>toggleBillStatus(e,e.paid)),t.querySelector(".history-btn").addEventListener("click",()=>showPaymentHistory(e)),t.querySelector(".edit-btn").addEventListener("click",()=>openEditModal(e,!1)),t.querySelector(".delete-btn").addEventListener("click",()=>deleteItem(e.id,'bills')),t}
+        function getCategoryClass(e){return{Utilities:"bg-blue-100 text-blue-800","Rent/Mortgage":"bg-red-100 text-red-800",Subscription:"bg-purple-100 text-purple-800",Groceries:"bg-yellow-100 text-yellow-800",Auto:"bg-indigo-100 text-indigo-800",Insurance:"bg-pink-100 text-pink-800",Medical:"bg-red-100 text-red-800","Debt Payment":"bg-orange-100 text-orange-800","Personal Care":"bg-teal-100 text-teal-800",Entertainment:"bg-green-100 text-green-800",Education:"bg-cyan-100 text-cyan-800",Other:"bg-gray-100 text-gray-800"}[e]||"bg-gray-100 text-gray-800"}
+        function renderTemplates(){const e=DOMElements.recurringTemplatesList;e.innerHTML="",DOMElements.noTemplatesMessage.classList.toggle("hidden",allTemplates.length>0),allTemplates.sort((e,t)=>new Date(e.nextDueDate)-new Date(t.nextDueDate)).forEach(t=>{const a=document.createElement("div");a.className="animated-item bg-gray-50 p-4 rounded-lg flex items-center justify-between gap-4",a.innerHTML=`<div class="flex items-center gap-4"><i class="fas fa-sync-alt text-blue-500 fa-2x"></i><div><p class="font-semibold text-gray-800">${t.name}</p><p class="text-sm text-gray-500">Next bill on: ${new Date(t.nextDueDate+"T00:00:00").toLocaleDateString()}</p></div></div><div class="flex items-center gap-4"><p class="font-bold text-lg text-gray-800">${formatCurrency(t.amount)}</p><button class="edit-btn text-gray-400 hover:text-blue-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200" title="Edit Template"><i class="fas fa-pencil-alt"></i></button><button class="delete-btn text-gray-400 hover:text-red-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200" title="Delete Template"><i class="fas fa-trash-alt"></i></button></div>`,a.querySelector(".edit-btn").addEventListener("click",()=>openEditModal(t,!0)),a.querySelector(".delete-btn").addEventListener("click",()=>deleteItem(t.id,'bills')),e.appendChild(a)})}
+        function renderAccounts(){const e=DOMElements.accountsList;e.innerHTML="",DOMElements.noAccountsMessage.classList.toggle("hidden",allAccounts.length>0),allAccounts.forEach(t=>{const a=document.createElement("div");a.className="animated-item bg-gray-50 p-4 rounded-lg flex items-center justify-between gap-4",a.innerHTML=`<div class="flex items-center gap-4"><i class="fas fa-money-check-alt text-green-500 fa-2x"></i><div><p class="font-semibold text-gray-800">${t.name}</p></div></div><div class="flex items-center gap-4"><p class="font-bold text-lg text-green-800">${formatCurrency(t.amount)}</p><button class="delete-btn text-gray-400 hover:text-red-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200" title="Delete Source"><i class="fas fa-trash-alt"></i></button></div>`,a.querySelector(".delete-btn").addEventListener("click",()=>deleteItem(t.id,'accounts')),e.appendChild(a)})}
+        function renderGoals(){const e=DOMElements.goalsList;e.innerHTML="",DOMElements.noGoalsMessage.classList.toggle("hidden",allGoals.length>0),allGoals.forEach(t=>{const a=document.createElement("div");a.className=`animated-item goal-card bg-white rounded-xl shadow-md overflow-hidden ${t.currentAmount>=t.targetAmount?"completed":""}`;const o=Math.min(t.currentAmount/t.targetAmount*100,100);a.innerHTML=`<div class="p-6"><div class="flex justify-between items-start"><div><h3 class="font-bold text-xl">${t.name}</h3><p class="text-sm text-gray-500">Target: ${formatCurrency(t.targetAmount)}</p></div><div class="flex items-center gap-2"><button class="contribute-btn bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-green-600 transition" title="Contribute" ${t.currentAmount>=t.targetAmount?"disabled":""}><i class="fas fa-plus"></i></button><button class="delete-btn text-gray-400 hover:text-red-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100" title="Delete Goal"><i class="fas fa-trash-alt"></i></button></div></div><div class="mt-4"><div class="flex justify-between mb-1"><span class="text-sm font-medium text-gray-700">${formatCurrency(t.currentAmount)}</span>${t.currentAmount>=t.targetAmount?'<span class="text-sm font-bold text-green-600">Completed!</span>':`<span class="text-sm font-medium text-gray-700">${o.toFixed(0)}%</span>`}</div><div class="w-full bg-gray-200 rounded-full h-2.5"><div class="progress-bar bg-blue-600 h-2.5 rounded-full" style="width: ${o}%"></div></div></div></div>`,a.querySelector(".contribute-btn").addEventListener("click",()=>openContributeGoalModal(t.id)),a.querySelector(".delete-btn").addEventListener("click",()=>deleteItem(t.id,"goals")),e.appendChild(a)})}
+        function renderBudgets() {
+            const listEl = DOMElements.budgetsList;
+            listEl.innerHTML = '';
+            DOMElements.noBudgetsMessage.classList.toggle('hidden', allBudgets.length > 0);
+            
+            const thisMonth = new Date().getMonth();
+            const thisYear = new Date().getFullYear();
+
+            allBudgets.forEach(budget => {
+                const spent = allBills
+                    .filter(bill => bill.paid && bill.category === budget.category && bill.paidAt?.toDate().getMonth() === thisMonth && bill.paidAt?.toDate().getFullYear() === thisYear)
+                    .reduce((sum, bill) => sum + bill.amount, 0);
+
+                const percentage = (spent / budget.amount) * 100;
+                let color = 'bg-green-500';
+                if (percentage > 75) color = 'bg-yellow-500';
+                if (percentage > 100) color = 'bg-red-500';
+
+                const div = document.createElement('div');
+                div.className = 'animated-item bg-white p-4 rounded-lg shadow-sm';
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-lg">${budget.category}</h3>
+                        <button class="delete-btn text-gray-400 hover:text-red-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100" title="Delete Budget"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-inner ${color}" style="width: ${Math.min(percentage, 100)}%;"></div>
+                    </div>
+                    <div class="flex justify-between text-sm mt-1">
+                        <span>${formatCurrency(spent)}</span>
+                        <span>${formatCurrency(budget.amount)}</span>
+                    </div>
+                `;
+                div.querySelector('.delete-btn').addEventListener('click', () => deleteItem(budget.id, 'budgets'));
+                listEl.appendChild(div);
+            });
+        }
+        function renderTransactions() {
+            const listEl = DOMElements.transactionsList; listEl.innerHTML = '';
+            const sortedTransactions = allTransactions.filter(t => t.date && t.date.toDate).sort((a,b) => b.date.toDate() - a.date.toDate());
+            DOMElements.noTransactionsMessage.classList.toggle('hidden', sortedTransactions.length > 0);
+            sortedTransactions.forEach(t => {
+                const isExpense = t.amount < 0;
+                const div = document.createElement('div');
+                div.className = 'animated-item flex items-center justify-between p-3 bg-white rounded-lg shadow-sm';
+                div.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <i class="fas ${isExpense ? 'fa-arrow-down text-red-500' : 'fa-arrow-up text-green-500'}"></i>
+                        <div>
+                            <p class="font-semibold">${t.name}</p>
+                            <p class="text-sm text-gray-500">${t.date.toDate().toLocaleDateString()} - ${t.type}</p>
+                        </div>
+                    </div>
+                    <p class="font-bold ${isExpense ? 'text-red-600' : 'text-green-600'}">${formatCurrency(t.amount)}</p>
+                `;
+                listEl.appendChild(div);
+            })
+        }
+        function renderCalendar() {
+            DOMElements.calendarGrid.innerHTML = '';
+            const month = calendarDate.getMonth();
+            const year = calendarDate.getFullYear();
+            DOMElements.calendarMonthYear.textContent = `${calendarDate.toLocaleString('default', { month: 'long' })} ${year}`;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDay; i++) {
+                DOMElements.calendarGrid.appendChild(document.createElement('div'));
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'p-2 border h-28 flex flex-col';
+                dayCell.innerHTML = `<span class="font-bold">${day}</span>`;
+                
+                const dayBills = allBills.filter(bill => {
+                    const dueDate = new Date(bill.dueDate + 'T00:00:00');
+                    return dueDate.getFullYear() === year && dueDate.getMonth() === month && dueDate.getDate() === day;
+                });
+                
+                if (dayBills.length > 0) {
+                    const billsList = document.createElement('div');
+                    billsList.className = 'mt-1 space-y-1 overflow-y-auto';
+                    dayBills.forEach(bill => {
+                        const billEl = document.createElement('div');
+                        billEl.className = 'text-xs bg-blue-100 text-blue-800 p-1 rounded truncate';
+                        billEl.textContent = bill.name;
+                        billsList.appendChild(billEl);
+                    });
+                    dayCell.appendChild(billsList);
+                }
+                DOMElements.calendarGrid.appendChild(dayCell);
+            }
+        }
+        
+        // --- UTILITIES & MODALS ---
+        function formatCurrency(e){return e.toLocaleString("en-US",{style:"currency",currency:"USD"})}
+        function setDefaultDueDate(){DOMElements.addBillForm.querySelector("#dueDate").valueAsDate=new Date}
+        function populateCategoryDropdowns(){document.querySelectorAll('select[name="billCategory"], select[name="editBillCategory"], #budgetCategory, #transactionCategory').forEach(e=>{e.innerHTML="",CATEGORIES.sort().forEach(t=>{const a=document.createElement("option");a.value=t,a.textContent=t,e.appendChild(a)})})}
+        function openEditModal(item, isTemplate = false) {
+            const modal = DOMElements.editBillModal;
+            const form = modal.querySelector('#editBillForm');
+            
+            form.editBillId.value = item.id;
+            form.editBillName.value = item.name;
+            form.editBillAmount.value = item.amount;
+            form.editBillCategory.value = item.category || 'Other';
+            
+            const dueDateContainer = modal.querySelector('#editDueDateContainer');
+            const recurringWarning = modal.querySelector('#editRecurringWarning');
+            const errorMsg = modal.querySelector('#editFormError');
+            
+            dueDateContainer.classList.toggle('hidden', isTemplate);
+            if (!isTemplate) {
+                form.editDueDate.value = item.dueDate;
+            }
+            recurringWarning.classList.toggle('hidden', isTemplate || !item.parentTemplateId);
+            
+            errorMsg.classList.add('hidden'); 
+            modal.classList.remove('hidden');
+        }
+        function closeEditModal(){DOMElements.editBillModal.classList.add("hidden")}
+        function showConfirmationModal(e,t,a,o){const n=DOMElements.confirmationModal;n.innerHTML=`<div class="modal-content"><h3 class="text-lg font-bold">${e}</h3><p class="my-4">${t}</p><div class="flex justify-end space-x-4"><button id="modalCancel" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button><button id="modalConfirm" class="px-4 py-2 text-white rounded-md ${a}">Confirm</button></div></div>`;const r=()=>{n.innerHTML="",n.classList.add("hidden")};n.classList.remove("hidden"),n.querySelector("#modalConfirm").addEventListener("click",()=>{o(),r()}),n.querySelector("#modalCancel").addEventListener("click",r)}
+        async function showPaymentHistory(e){const t=DOMElements.paymentHistoryModal;t.querySelector("#historyModalTitle").textContent=`History for ${e.name}`,t.querySelector("#historyModalBody").innerHTML='<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-2xl text-blue-500"></i></div>',t.classList.remove("hidden");let a="<p class=\"text-gray-500\">No payment history found.</p>",o=[];if(e.parentTemplateId){const t=query(collection(db,`artifacts/${appId}/users/${userId}/bills`),where("parentTemplateId","==",e.parentTemplateId),where("paid","==",!0)),n=await getDocs(t);n.forEach(e=>o.push(e.data())),o.sort((e,t)=>t.paidAt.toMillis()-e.paidAt.toMillis())}else e.paid&&o.push(e);if(o.length>0){a='<ul class="space-y-3">';for(const e of o)a+=`<li class="flex justify-between items-center bg-gray-50 p-3 rounded-md"><div><p class="font-semibold">${formatCurrency(e.amount)}</p><p class="text-sm text-gray-500">Due: ${new Date(e.dueDate+"T00:00:00").toLocaleDateString()}</p></div><p class="text-sm text-green-600 font-medium">Paid on ${e.paidAt.toDate().toLocaleDateString()}</p></li>`;a+="</ul>"}t.querySelector("#historyModalBody").innerHTML=a}
+        function renderAccountInfo() {
+            const user = auth.currentUser;
+            const container = DOMElements.accountInfo;
+
+            if (!user) {
+                container.innerHTML = '<p>Loading account details...</p>';
+                return;
+            }
+
+            if (user.isAnonymous) {
+                container.innerHTML = `
+                    <p class="text-gray-600">Your data is currently stored anonymously on this device. Create a permanent account to save your data and access it from anywhere.</p>
+                    <form id="accountUpgradeForm" class="space-y-4">
+                        <div>
+                            <label for="accountEmail" class="block text-sm font-medium">Email</label>
+                            <input type="email" id="accountEmail" required class="mt-1 block w-full input-field">
+                        </div>
+                        <div>
+                            <label for="accountPassword" class="block text-sm font-medium">Password (min. 6 characters)</label>
+                            <input type="password" id="accountPassword" required class="mt-1 block w-full input-field">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700">Save Account</button>
+                        <p id="upgradeError" class="text-red-500 text-sm mt-2 hidden"></p>
+                    </form>
+                `;
+                document.getElementById('accountUpgradeForm').addEventListener('submit', handleAccountUpgrade);
+            } else {
+                container.innerHTML = `
+                    <p class="text-gray-600">You are logged in as:</p>
+                    <p class="font-semibold text-lg break-words">${user.email}</p>
+                    <button id="logOutBtn" class="mt-4 w-full bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700">Log Out</button>
+                `;
+                document.getElementById('logOutBtn').addEventListener('click', () => signOut(auth));
+            }
+        }
+        async function handleAccountUpgrade(e) {
+            e.preventDefault();
+            const form = e.target;
+            const email = form.accountEmail.value;
+            const password = form.accountPassword.value;
+            const errorEl = document.getElementById('upgradeError');
+            errorEl.classList.add('hidden');
+
+            try {
+                const credential = EmailAuthProvider.credential(email, password);
+                await linkWithCredential(auth.currentUser, credential);
+                alert("Account successfully upgraded! You can now log in on any device with this email and password.");
+                renderAccountInfo(); 
+            } catch (error) {
+                console.error("Error linking credential:", error);
+                errorEl.textContent = error.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+         function renderLoginForm() {
+             DOMElements.authContainer.innerHTML = `
+                <div class="flex border-b">
+                    <button id="loginTab" class="flex-1 py-2 font-semibold border-b-2 border-blue-600">Log In</button>
+                    <button id="signupTab" class="flex-1 py-2 font-semibold text-gray-500">Sign Up</button>
+                </div>
+                <form id="loginForm" class="space-y-4 mt-4">
+                    <div>
+                        <label for="loginEmail" class="block text-sm font-medium">Email</label>
+                        <input type="email" id="loginEmail" required class="mt-1 block w-full input-field">
+                    </div>
+                    <div>
+                        <label for="loginPassword" class="block text-sm font-medium">Password</label>
+                        <input type="password" id="loginPassword" required class="mt-1 block w-full input-field">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700">Log In</button>
+                    <p id="loginError" class="text-red-500 text-sm mt-2 hidden"></p>
+                </form>
+            `;
+            document.getElementById('loginTab').addEventListener('click', renderLoginForm);
+            document.getElementById('signupTab').addEventListener('click', renderSignUpForm);
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        }
+         function renderSignUpForm() {
+             DOMElements.authContainer.innerHTML = `
+                <div class="flex border-b">
+                    <button id="loginTab" class="flex-1 py-2 font-semibold text-gray-500">Log In</button>
+                    <button id="signupTab" class="flex-1 py-2 font-semibold border-b-2 border-blue-600">Sign Up</button>
+                </div>
+                <form id="signupForm" class="space-y-4 mt-4">
+                     <div>
+                        <label for="signupEmail" class="block text-sm font-medium">Email</label>
+                        <input type="email" id="signupEmail" required class="mt-1 block w-full input-field">
+                    </div>
+                    <div>
+                        <label for="signupPassword" class="block text-sm font-medium">Password</label>
+                        <input type="password" id="signupPassword" required class="mt-1 block w-full input-field">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700">Sign Up</button>
+                    <p id="signupError" class="text-red-500 text-sm mt-2 hidden"></p>
+                </form>
+            `;
+            document.getElementById('loginTab').addEventListener('click', renderLoginForm);
+            document.getElementById('signupTab').addEventListener('click', renderSignUpForm);
+            document.getElementById('signupForm').addEventListener('submit', handleSignUp);
+        }
+        async function handleLogin(e){
+            e.preventDefault();
+            const email = e.target.loginEmail.value;
+            const password = e.target.loginPassword.value;
+            const errorEl = document.getElementById('loginError');
+            errorEl.classList.add('hidden');
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch(error) {
+                console.error("Login failed:", error);
+                errorEl.textContent = error.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+        async function handleSignUp(e) {
+            e.preventDefault();
+            const email = e.target.signupEmail.value;
+            const password = e.target.signupPassword.value;
+            const errorEl = document.getElementById('signupError');
+            errorEl.classList.add('hidden');
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+            } catch(error) {
+                console.error("Sign up failed:", error);
+                errorEl.textContent = error.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+        // --- EVENT LISTENERS & UI ---
+        function setupEventListeners() {
+            DOMElements.tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.dataset.tab;
+                    DOMElements.tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.toggle('active', content.id === `${tabName}Content`);
+                    });
+                });
+            });
+            document.querySelector('[data-tab="dashboard"]').click();
+            DOMElements.addBillBtn.addEventListener('click', () => openAddBillModal(false));
+            DOMElements.addRecurringTemplateBtn.addEventListener('click', () => openAddBillModal(true));
+            DOMElements.addAccountBtn.addEventListener('click', openAddAccountModal);
+            DOMElements.addGoalBtn.addEventListener('click', openAddGoalModal);
+            DOMElements.addBudgetBtn.addEventListener('click', openAddBudgetModal);
+            DOMElements.addTransactionBtn.addEventListener('click', openAddTransactionModal);
+            DOMElements.addBillModalClose.addEventListener('click', closeAddBillModal);
+            DOMElements.addAccountModalClose.addEventListener('click', closeAddAccountModal);
+            DOMElements.addGoalModalClose.addEventListener('click', closeAddGoalModal);
+            DOMElements.addBudgetModalClose.addEventListener('click', closeAddBudgetModal);
+            DOMElements.addTransactionModalClose.addEventListener('click', closeAddTransactionModal);
+            DOMElements.contributeGoalModalClose.addEventListener('click', closeContributeGoalModal);
+            DOMElements.addBillForm.addEventListener('submit', handleAddBill);
+            DOMElements.addAccountForm.addEventListener('submit', handleAddAccount);
+            DOMElements.addGoalForm.addEventListener('submit', handleAddGoal);
+            DOMElements.addBudgetForm.addEventListener('submit', handleAddBudget);
+            DOMElements.addTransactionForm.addEventListener('submit', handleAddTransaction);
+            DOMElements.contributeGoalForm.addEventListener('submit', handleContributeToGoal);
+            DOMElements.editBillForm.addEventListener('submit', handleUpdateBill);
+            DOMElements.searchInput.addEventListener('input', (e) => { currentSearchTerm = e.target.value; filterAndRender(); });
+            DOMElements.historyModalClose.addEventListener('click', () => DOMElements.paymentHistoryModal.classList.add('hidden'));
+            DOMElements.editModalCancel.addEventListener('click', () => closeEditModal());
+            DOMElements.generateReportBtn.addEventListener('click', generatePrintableReport);
+            DOMElements.prevMonthBtn.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendar(); });
+            DOMElements.nextMonthBtn.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendar(); });
+            DOMElements.sidebarToggle.addEventListener('click', () => {
+                document.body.classList.toggle('sidebar-collapsed');
+            });
+             DOMElements.anonSignInBtn.addEventListener('click', () => signInAnonymously(auth));
+        }
+
+        function closeAddBillModal() { DOMElements.addBillModal.classList.add('hidden'); }
+        function openAddBillModal(isRecurring = false) {
+            DOMElements.addBillForm.reset();
+            setDefaultDueDate();
+            DOMElements.addBillForm.querySelector('#isRecurring').checked = isRecurring;
+            DOMElements.addBillModal.classList.remove('hidden');
+        }
+        function closeAddAccountModal() { DOMElements.addAccountModal.classList.add('hidden'); }
+        function openAddAccountModal() {
+            DOMElements.addAccountForm.reset();
+            DOMElements.addAccountModal.classList.remove('hidden');
+        }
+        function closeAddGoalModal() { DOMElements.addGoalModal.classList.add('hidden'); }
+        function openAddGoalModal() {
+            DOMElements.addGoalForm.reset();
+            DOMElements.addGoalModal.classList.remove('hidden');
+        }
+         function closeAddBudgetModal() { DOMElements.addBudgetModal.classList.add('hidden'); }
+        function openAddBudgetModal() {
+            DOMElements.addBudgetForm.reset();
+            DOMElements.addBudgetModal.classList.remove('hidden');
+        }
+        function closeContributeGoalModal() { DOMElements.contributeGoalModal.classList.add('hidden'); }
+        function openContributeGoalModal(goalId) {
+            const form = DOMElements.contributeGoalForm;
+            form.reset();
+            form.querySelector('#contributeGoalId').value = goalId;
+            DOMElements.contributeGoalModal.classList.remove('hidden');
+        }
+        function closeAddTransactionModal() { DOMElements.addTransactionModal.classList.add('hidden'); }
+        function openAddTransactionModal() {
+            const form = DOMElements.addTransactionForm;
+            form.reset();
+            form.transactionDate.valueAsDate = new Date();
+            DOMElements.addTransactionModal.classList.remove('hidden');
+        }
+
+        function generatePrintableReport() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const errorEl = DOMElements.reportError;
+
+            if (!startDate || !endDate) {
+                errorEl.textContent = 'Please select both a start and end date.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            errorEl.classList.add('hidden');
+            
+            const start = new Date(startDate + 'T00:00:00');
+            const end = new Date(endDate + 'T23:59:59');
+
+            const paidBillsInRange = allBills.filter(bill => {
+                if (!bill.paid || !bill.paidAt) return false;
+                const paidDate = bill.paidAt.toDate();
+                return paidDate >= start && paidDate <= end;
+            });
+
+            const groupedByCategory = paidBillsInRange.reduce((acc, bill) => {
+                const category = bill.category || 'Other';
+                if (!acc[category]) {
+                    acc[category] = [];
+                }
+                acc[category].push(bill);
+                return acc;
+            }, {});
+
+            let reportHtml = `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <title>ZeroDue Report</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <style>
+                        @media print {
+                            .no-print { display: none; }
+                        }
+                    </style>
+                </head>
+                <body class="p-8">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="flex justify-between items-center mb-6">
+                             <h1 class="text-3xl font-bold">ZeroDue Paid Bills Report</h1>
+                             <button onclick="window.print()" class="no-print bg-blue-500 text-white px-4 py-2 rounded">Print</button>
+                        </div>
+                        <p class="mb-4">Report for ${start.toLocaleDateString()} to ${end.toLocaleDateString()}</p>
+                        <hr class="my-6"/>
+            `;
+            
+            let grandTotal = 0;
+            const sortedCategories = Object.keys(groupedByCategory).sort();
+
+            for (const category of sortedCategories) {
+                reportHtml += `<h2 class="text-2xl font-semibold mb-3">${category}</h2>`;
+                reportHtml += '<table class="min-w-full bg-white mb-6"><thead><tr><th class="py-2 px-4 border-b text-left">Bill Name</th><th class="py-2 px-4 border-b text-left">Due Date</th><th class="py-2 px-4 border-b text-left">Paid Date</th><th class="py-2 px-4 border-b text-right">Amount</th></tr></thead><tbody>';
+                
+                let categoryTotal = 0;
+                groupedByCategory[category]
+                    .sort((a,b) => a.paidAt.toMillis() - b.paidAt.toMillis())
+                    .forEach(bill => {
+                    reportHtml += `
+                        <tr>
+                            <td class="py-2 px-4 border-b">${bill.name}</td>
+                            <td class="py-2 px-4 border-b">${new Date(bill.dueDate + 'T00:00:00').toLocaleDateString()}</td>
+                            <td class="py-2 px-4 border-b">${bill.paidAt.toDate().toLocaleDateString()}</td>
+                            <td class="py-2 px-4 border-b text-right">${formatCurrency(bill.amount)}</td>
+                        </tr>
+                    `;
+                    categoryTotal += bill.amount;
+                });
+                grandTotal += categoryTotal;
+
+                reportHtml += `
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-right font-bold py-2 px-4">Subtotal:</td>
+                            <td class="text-right font-bold py-2 px-4">${formatCurrency(categoryTotal)}</td>
+                        </tr>
+                    </tfoot></table>`;
+            }
+
+            reportHtml += `<div class="text-right mt-8"><h2 class="text-2xl font-bold">Grand Total: ${formatCurrency(grandTotal)}</h2></div>`;
+            reportHtml += `</div></body></html>`;
+
+            const reportWindow = window.open('', '', 'width=800,height=600');
+            reportWindow.document.write(reportHtml);
+            reportWindow.document.close();
+        }
+        
+        // --- STARTUP ---
+        main();
+
+    </script>
+</body>
+</html>
