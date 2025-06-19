@@ -83,192 +83,210 @@
             border-radius: 9999px;
             transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
         }
+         /* Collapsible Sidebar Styles */
+        #sidebarNav, #mainContentArea {
+            transition: all 0.3s ease-in-out;
+        }
+        body.sidebar-collapsed #sidebarNav {
+            width: 5rem;
+        }
+        body.sidebar-collapsed #sidebarNav .nav-text, body.sidebar-collapsed #sidebarNav .app-title {
+            display: none;
+        }
+        body.sidebar-collapsed #sidebarNav .tab {
+            justify-content: center;
+        }
+         body.sidebar-collapsed #sidebarToggle i {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body class="antialiased text-gray-800">
 
-    <!-- Main Application Container -->
-    <div id="appContainer" class="container mx-auto p-4 md:p-8 max-w-7xl">
-
-        <!-- Header -->
-        <header class="mb-6">
-            <h1 class="text-4xl font-bold text-gray-900 flex items-center">
-                <i class="fas fa-file-invoice-dollar text-blue-600 mr-3"></i>
-                ZeroDue
-            </h1>
-            <p class="text-gray-500 mt-2">Let's get you down to 0.</p>
-            <div id="authStatus" class="mt-4 text-xs text-gray-400">Connecting...</div>
-        </header>
-
-        <!-- Loading Spinner -->
+    <div id="app">
         <div id="loader" class="text-center py-16">
             <i class="fas fa-spinner fa-spin text-5xl text-blue-500"></i>
             <p class="mt-4 text-gray-500">Loading your financial data...</p>
         </div>
-        
-        <!-- Main Content (post-load) -->
-        <div id="mainContent" class="hidden">
-            <div class="flex flex-col lg:flex-row gap-8">
-                <!-- Tabs Navigation (Left Sidebar) -->
-                <nav class="lg:w-1/4 xl:w-1/5 bg-white p-4 rounded-lg shadow-sm flex flex-col space-y-2">
-                    <button data-tab="dashboard" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-chart-pie w-6 text-center"></i>Dashboard</button>
-                    <button data-tab="transactions" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-exchange-alt w-6 text-center"></i>Transactions</button>
-                    <button data-tab="bills" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-tasks w-6 text-center"></i>Manage Bills</button>
-                    <button data-tab="calendar" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-calendar-alt w-6 text-center"></i>Calendar</button>
-                    <button data-tab="accounts" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-university w-6 text-center"></i>Accounts</button>
-                    <button data-tab="goals" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-bullseye w-6 text-center"></i>Goals</button>
-                    <button data-tab="budgets" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-piggy-bank w-6 text-center"></i>Budgets</button>
-                    <button data-tab="recurring" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-sync-alt w-6 text-center"></i>Recurring</button>
-                    <button data-tab="reporting" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-file-alt w-6 text-center"></i>Reporting</button>
-                    <button data-tab="settings" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-cog w-6 text-center"></i>Settings</button>
-                </nav>
-
-                <!-- Tab Content Area -->
-                <div class="flex-1">
-                    <!-- Tab Content: Dashboard -->
-                    <div id="dashboardContent" class="tab-content animated-item">
-                         <section class="space-y-6">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div class="bg-white p-6 rounded-xl shadow-md"> <h3 class="font-semibold text-gray-700">Total Income</h3> <p id="totalIncome" class="text-4xl font-bold text-green-600">$0.00</p> </div>
-                                <div class="bg-white p-6 rounded-xl shadow-md"> <h3 class="font-semibold text-gray-700">Upcoming Bills</h3> <p id="unpaidTotal" class="text-4xl font-bold text-red-600">$0.00</p> </div>
-                                <div class="bg-white p-6 rounded-xl shadow-md"> <h3 class="font-semibold text-gray-700">Net Balance</h3> <p id="netBalance" class="text-4xl font-bold text-gray-800">$0.00</p> </div>
-                            </div>
-                             <div class="bg-white p-6 rounded-xl shadow-md">
-                                <h2 class="text-2xl font-semibold mb-4">Notifications</h2>
-                                <div id="notificationsList" class="space-y-3"></div>
-                                <p id="noNotifications" class="text-sm text-gray-500 text-center p-4 bg-gray-50 rounded-md">No bills are due soon. You're all caught up!</p>
-                            </div>
-                            <div class="bg-white p-6 rounded-xl shadow-md">
-                                <h2 class="text-2xl font-semibold mb-4">Analytics</h2>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div> <h3 class="text-lg font-medium text-center mb-2">Spending by Category (This Month)</h3> <canvas id="categoryChart"></canvas> </div>
-                                    <div> <h3 class="text-lg font-medium text-center mb-2">Monthly Spending (Last 6 Months)</h3> <canvas id="spendingChart"></canvas> </div>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-
-                    <!-- Tab Content: Transactions -->
-                    <div id="transactionsContent" class="tab-content animated-item">
-                        <div class="bg-white p-6 rounded-xl shadow-md">
-                             <div class="flex justify-between items-center mb-6">
-                                <div><h2 class="text-2xl font-semibold">All Transactions</h2><p class="text-gray-500">A complete history of your income and expenses.</p></div>
-                                <button id="addTransactionBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add Manual Transaction"> <i class="fas fa-plus"></i> </button>
-                             </div>
-                             <div id="transactionsList" class="space-y-2"></div>
-                             <p id="noTransactionsMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You don't have any transactions yet.</p>
-                        </div>
-                    </div>
-
-                    <!-- Tab Content: Manage Bills -->
-                    <div id="billsContent" class="tab-content animated-item">
-                        <div class="bg-white p-4 rounded-xl shadow-md mb-8">
-                            <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">Search & Add Bill</label>
-                            <div class="flex items-center gap-4">
-                                <div class="relative flex-grow">
-                                    <div class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"><i class="fas fa-search text-gray-400"></i></div>
-                                    <input type="search" id="searchInput" placeholder="Search by name or category..." class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md">
-                                </div>
-                                <button id="addBillBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add New Bill">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                            <section id="upcomingBillsSection"> <h2 class="text-2xl font-semibold mb-4">Upcoming Bills</h2> <div id="upcomingBillsList" class="space-y-4"></div> <p id="noUpcomingBills" class="text-center text-gray-500 py-6 bg-white rounded-lg shadow-sm">No upcoming bills!</p> </section>
-                            <section id="paidBillsSection"> <h2 class="text-2xl font-semibold mb-4">Paid Bills</h2> <div id="paidBillsList" class="space-y-4"></div> <p id="noPaidBills" class="text-center text-gray-500 py-6 bg-white rounded-lg shadow-sm">No paid bills yet.</p> </section>
-                        </div>
-                        <p id="noResultsMessage" class="hidden text-center text-gray-500 py-6 bg-white rounded-lg shadow-sm mt-8">No bills match your search.</p>
-                    </div>
-
-                    <!-- Tab Content: Calendar -->
-                    <div id="calendarContent" class="tab-content animated-item">
-                        <div class="bg-white p-6 rounded-xl shadow-md">
-                            <div class="flex justify-between items-center mb-4">
-                                <button id="prevMonthBtn" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-left"></i></button>
-                                <h2 id="calendarMonthYear" class="text-2xl font-semibold"></h2>
-                                <button id="nextMonthBtn" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-right"></i></button>
-                            </div>
-                            <div class="grid grid-cols-7 gap-1 text-center font-semibold text-gray-600">
-                                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-                            </div>
-                            <div id="calendarGrid" class="grid grid-cols-7 gap-1 mt-2"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Tab Content: Accounts -->
-                    <div id="accountsContent" class="tab-content animated-item">
-                         <div class="bg-white p-6 rounded-xl shadow-md">
-                             <div class="flex justify-between items-center mb-6">
-                                <div> <h2 class="text-2xl font-semibold">Manage Income Sources</h2> <p class="text-gray-500">Add or remove your accounts and sources of income.</p> </div>
-                                <button id="addAccountBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add Income Source"> <i class="fas fa-plus"></i> </button>
-                             </div>
-                             <div id="accountsList" class="space-y-4"></div>
-                             <p id="noAccountsMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You have not added any income sources yet.</p>
-                        </div>
-                    </div>
-
-                    <!-- Tab Content: Goals -->
-                    <div id="goalsContent" class="tab-content animated-item">
-                         <div class="bg-white p-6 rounded-xl shadow-md">
-                             <div class="flex justify-between items-center mb-6">
-                                <div> <h2 class="text-2xl font-semibold">Financial Goals</h2> <p class="text-gray-500">Set and track progress toward your savings goals.</p> </div>
-                                <button id="addGoalBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add New Goal"> <i class="fas fa-plus"></i> </button>
-                             </div>
-                             <div id="goalsList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-                             <p id="noGoalsMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You haven't set any goals yet.</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Tab Content: Budgets -->
-                    <div id="budgetsContent" class="tab-content animated-item">
-                         <div class="bg-white p-6 rounded-xl shadow-md">
-                             <div class="flex justify-between items-center mb-6">
-                                <div> <h2 class="text-2xl font-semibold">Monthly Budgets</h2> <p class="text-gray-500">Set spending limits for categories.</p> </div>
-                                <button id="addBudgetBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add New Budget"> <i class="fas fa-plus"></i> </button>
-                             </div>
-                             <div id="budgetsList" class="space-y-4"></div>
-                             <p id="noBudgetsMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You haven't set any budgets yet.</p>
-                        </div>
-                    </div>
-
-                    <!-- Tab Content: Recurring -->
-                    <div id="recurringContent" class="tab-content animated-item">
-                        <div class="bg-white p-6 rounded-xl shadow-md">
-                             <div class="flex justify-between items-center mb-6">
-                                <div> <h2 class="text-2xl font-semibold">Manage Recurring Bill Templates</h2> <p class="text-gray-500">These templates automatically generate your monthly bills.</p> </div>
-                                <button id="addRecurringTemplateBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add Recurring Template"> <i class="fas fa-plus"></i> </button>
-                             </div>
-                             <div id="recurringTemplatesList" class="space-y-4"></div>
-                             <p id="noTemplatesMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You have not set up any recurring bills yet.</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Tab Content: Reporting -->
-                    <div id="reportingContent" class="tab-content animated-item">
-                         <div class="bg-white p-6 rounded-xl shadow-md">
-                             <h2 class="text-2xl font-semibold mb-4">Generate Report</h2>
-                             <p class="text-gray-500 mb-6">Select a date range to generate a printable report of all paid bills.</p>
-                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                                 <div> <label for="startDate" class="block text-sm font-medium text-gray-700">Start Date</label> <input type="date" id="startDate" name="startDate" required class="mt-1 block w-full input-field"> </div>
-                                 <div> <label for="endDate" class="block text-sm font-medium text-gray-700">End Date</label> <input type="date" id="endDate" name="endDate" required class="mt-1 block w-full input-field"> </div>
-                                 <button id="generateReportBtn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 flex items-center justify-center gap-2"> <i class="fas fa-print"></i> Generate Report </button>
-                             </div>
-                             <p id="reportError" class="text-red-500 text-sm mt-2 hidden"></p>
-                         </div>
-                    </div>
-                    
-                    <!-- Tab Content: Settings -->
-                     <div id="settingsContent" class="tab-content animated-item">
-                        <div class="bg-white p-6 rounded-xl shadow-md">
-                             <h2 class="text-2xl font-semibold mb-4">Account Settings</h2>
-                            <div id="accountInfo" class="space-y-4"></div>
-                        </div>
-                    </div>
-
+        <!-- Auth Screen -->
+        <div id="authScreen" class="min-h-screen bg-gray-100 flex-col justify-center items-center p-4 hidden">
+            <div class="max-w-md w-full bg-white p-8 rounded-xl shadow-lg">
+                <h1 class="text-3xl font-bold text-gray-900 flex items-center justify-center mb-4">
+                   <i class="fas fa-file-invoice-dollar text-blue-600 mr-2"></i>
+                   ZeroDue
+                </h1>
+                <div id="authContainer">
+                    <!-- Login/Signup Forms will be rendered here by JS -->
+                </div>
+                <div class="mt-4 text-center">
+                     <button id="anonSignInBtn" class="text-sm text-blue-600 hover:underline">Continue Anonymously</button>
                 </div>
             </div>
         </div>
+
+        <!-- Main App Container (Initially Hidden) -->
+        <div id="appContainer" class="hidden">
+             <div class="flex">
+                    <!-- Tabs Navigation (Left Sidebar) -->
+                    <nav id="sidebarNav" class="w-64 bg-white p-4 rounded-lg shadow-sm flex flex-col h-screen">
+                        <div class="flex items-center justify-between mb-6">
+                            <h1 class="text-2xl font-bold text-gray-900 flex items-center app-title">
+                               <i class="fas fa-file-invoice-dollar text-blue-600 mr-2"></i>
+                               ZeroDue
+                            </h1>
+                            <button id="sidebarToggle" class="p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-md">
+                                <i class="fas fa-angle-double-left"></i>
+                            </button>
+                        </div>
+                        <div class="flex-grow space-y-2">
+                            <button data-tab="dashboard" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-chart-pie w-6 text-center"></i><span class="nav-text">Dashboard</span></button>
+                            <button data-tab="transactions" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-exchange-alt w-6 text-center"></i><span class="nav-text">Transactions</span></button>
+                            <button data-tab="bills" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-tasks w-6 text-center"></i><span class="nav-text">Manage Bills</span></button>
+                            <button data-tab="accounts" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-university w-6 text-center"></i><span class="nav-text">Accounts</span></button>
+                            <button data-tab="goals" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-bullseye w-6 text-center"></i><span class="nav-text">Goals</span></button>
+                            <button data-tab="budgets" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-piggy-bank w-6 text-center"></i><span class="nav-text">Budgets</span></button>
+                            <button data-tab="recurring" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-sync-alt w-6 text-center"></i><span class="nav-text">Recurring</span></button>
+                            <button data-tab="reporting" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-file-alt w-6 text-center"></i><span class="nav-text">Reporting</span></button>
+                            <button data-tab="settings" class="tab w-full py-3 px-4 rounded-md font-semibold flex items-center gap-3"><i class="fas fa-cog w-6 text-center"></i><span class="nav-text">Settings</span></button>
+                        </div>
+                         <div id="authStatus" class="mt-4 text-xs text-gray-400 text-center nav-text">Connecting...</div>
+                    </nav>
+
+                    <!-- Tab Content Area -->
+                    <div id="mainContentArea" class="flex-1 p-8 overflow-y-auto h-screen">
+                         <!-- Tab Content: Dashboard -->
+                        <div id="dashboardContent" class="tab-content animated-item">
+                             <section class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div class="bg-white p-6 rounded-xl shadow-md"> <h3 class="font-semibold text-gray-700">Total Income (This Month)</h3> <p id="totalIncome" class="text-4xl font-bold text-green-600">$0.00</p> </div>
+                                    <div class="bg-white p-6 rounded-xl shadow-md"> <h3 class="font-semibold text-gray-700">Total Spent (This Month)</h3> <p id="totalSpent" class="text-4xl font-bold text-red-600">$0.00</p> </div>
+                                    <div class="bg-white p-6 rounded-xl shadow-md"> <h3 class="font-semibold text-gray-700">Net Balance (This Month)</h3> <p id="netBalance" class="text-4xl font-bold text-gray-800">$0.00</p> </div>
+                                </div>
+                                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <button id="prevMonthBtn" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-left"></i></button>
+                                            <h2 id="calendarMonthYear" class="text-2xl font-semibold"></h2>
+                                            <button id="nextMonthBtn" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-right"></i></button>
+                                        </div>
+                                        <div class="grid grid-cols-7 gap-1 text-center font-semibold text-gray-600">
+                                            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                                        </div>
+                                        <div id="calendarGrid" class="grid grid-cols-7 gap-1 mt-2"></div>
+                                    </div>
+                                    <div class="bg-white p-6 rounded-xl shadow-md">
+                                        <h2 class="text-2xl font-semibold mb-4">Notifications</h2>
+                                        <div id="notificationsList" class="space-y-3"></div>
+                                        <p id="noNotifications" class="text-sm text-gray-500 text-center p-4 bg-gray-50 rounded-md">No bills are due soon. You're all caught up!</p>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-6 rounded-xl shadow-md">
+                                    <h2 class="text-2xl font-semibold mb-4">Analytics</h2>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div> <h3 class="text-lg font-medium text-center mb-2">Spending by Category (This Month)</h3> <canvas id="categoryChart"></canvas> </div>
+                                        <div> <h3 class="text-lg font-medium text-center mb-2">Monthly Spending (Last 6 Months)</h3> <canvas id="spendingChart"></canvas> </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- Other Tab Contents... -->
+                         <div id="transactionsContent" class="tab-content animated-item">
+                            <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <div class="flex justify-between items-center mb-6">
+                                    <div><h2 class="text-2xl font-semibold">All Transactions</h2><p class="text-gray-500">A complete history of your income and expenses.</p></div>
+                                    <button id="addTransactionBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add Manual Transaction"> <i class="fas fa-plus"></i> </button>
+                                 </div>
+                                 <div id="transactionsList" class="space-y-2"></div>
+                                 <p id="noTransactionsMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You don't have any transactions yet.</p>
+                            </div>
+                        </div>
+
+                        <div id="billsContent" class="tab-content animated-item">
+                            <div class="bg-white p-4 rounded-xl shadow-md mb-8">
+                                <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">Search & Add Bill</label>
+                                <div class="flex items-center gap-4">
+                                    <div class="relative flex-grow">
+                                        <div class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center"><i class="fas fa-search text-gray-400"></i></div>
+                                        <input type="search" id="searchInput" placeholder="Search by name or category..." class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md">
+                                    </div>
+                                    <button id="addBillBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add New Bill">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                                <section id="upcomingBillsSection"> <h2 class="text-2xl font-semibold mb-4">Upcoming Bills</h2> <div id="upcomingBillsList" class="space-y-4"></div> <p id="noUpcomingBills" class="text-center text-gray-500 py-6 bg-white rounded-lg shadow-sm">No upcoming bills!</p> </section>
+                                <section id="paidBillsSection"> <h2 class="text-2xl font-semibold mb-4">Paid Bills</h2> <div id="paidBillsList" class="space-y-4"></div> <p id="noPaidBills" class="text-center text-gray-500 py-6 bg-white rounded-lg shadow-sm">No paid bills yet.</p> </section>
+                            </div>
+                            <p id="noResultsMessage" class="hidden text-center text-gray-500 py-6 bg-white rounded-lg shadow-sm mt-8">No bills match your search.</p>
+                        </div>
+                        
+                        <div id="accountsContent" class="tab-content animated-item">
+                             <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <div class="flex justify-between items-center mb-6">
+                                    <div> <h2 class="text-2xl font-semibold">Manage Income Sources</h2> <p class="text-gray-500">Add or remove your accounts and sources of income.</p> </div>
+                                    <button id="addAccountBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add Income Source"> <i class="fas fa-plus"></i> </button>
+                                 </div>
+                                 <div id="accountsList" class="space-y-4"></div>
+                                 <p id="noAccountsMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You have not added any income sources yet.</p>
+                            </div>
+                        </div>
+
+                        <div id="goalsContent" class="tab-content animated-item">
+                             <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <div class="flex justify-between items-center mb-6">
+                                    <div> <h2 class="text-2xl font-semibold">Financial Goals</h2> <p class="text-gray-500">Set and track progress toward your savings goals.</p> </div>
+                                    <button id="addGoalBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add New Goal"> <i class="fas fa-plus"></i> </button>
+                                 </div>
+                                 <div id="goalsList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                                 <p id="noGoalsMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You haven't set any goals yet.</p>
+                            </div>
+                        </div>
+                        
+                        <div id="budgetsContent" class="tab-content animated-item">
+                             <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <div class="flex justify-between items-center mb-6">
+                                    <div> <h2 class="text-2xl font-semibold">Monthly Budgets</h2> <p class="text-gray-500">Set spending limits for categories.</p> </div>
+                                    <button id="addBudgetBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add New Budget"> <i class="fas fa-plus"></i> </button>
+                                 </div>
+                                 <div id="budgetsList" class="space-y-4"></div>
+                                 <p id="noBudgetsMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You haven't set any budgets yet.</p>
+                            </div>
+                        </div>
+
+                        <div id="recurringContent" class="tab-content animated-item">
+                            <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <div class="flex justify-between items-center mb-6">
+                                    <div> <h2 class="text-2xl font-semibold">Manage Recurring Bill Templates</h2> <p class="text-gray-500">These templates automatically generate your monthly bills.</p> </div>
+                                    <button id="addRecurringTemplateBtn" class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg" title="Add Recurring Template"> <i class="fas fa-plus"></i> </button>
+                                 </div>
+                                 <div id="recurringTemplatesList" class="space-y-4"></div>
+                                 <p id="noTemplatesMessage" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg">You have not set up any recurring bills yet.</p>
+                            </div>
+                        </div>
+                        
+                        <div id="reportingContent" class="tab-content animated-item">
+                             <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <h2 class="text-2xl font-semibold mb-4">Generate Report</h2>
+                                 <p class="text-gray-500 mb-6">Select a date range to generate a printable report of all paid bills.</p>
+                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                     <div> <label for="startDate" class="block text-sm font-medium text-gray-700">Start Date</label> <input type="date" id="startDate" name="startDate" required class="mt-1 block w-full input-field"> </div>
+                                     <div> <label for="endDate" class="block text-sm font-medium text-gray-700">End Date</label> <input type="date" id="endDate" name="endDate" required class="mt-1 block w-full input-field"> </div>
+                                     <button id="generateReportBtn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 flex items-center justify-center gap-2"> <i class="fas fa-print"></i> Generate Report </button>
+                                 </div>
+                                 <p id="reportError" class="text-red-500 text-sm mt-2 hidden"></p>
+                             </div>
+                        </div>
+                        
+                         <div id="settingsContent" class="tab-content animated-item">
+                            <div class="bg-white p-6 rounded-xl shadow-md">
+                                 <h2 class="text-2xl font-semibold mb-4">Account Settings</h2>
+                                <div id="accountInfo" class="space-y-4"></div>
+                            </div>
+                        </div>
+                </div>
+            </div>
     </div>
 
     <!-- Modals -->
@@ -394,7 +412,7 @@
     <!-- Firebase and App Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, linkWithCredential, EmailAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, linkWithCredential, EmailAuthProvider, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, collection, addDoc, getDocs, deleteDoc, updateDoc, serverTimestamp, query, where, writeBatch, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- GLOBAL VARIABLES & CONFIG ---
@@ -407,7 +425,7 @@
             appId: "1:1071638541707:web:c7272c33efc51df6e76b8e",
             measurementId: "G-CVPKVT8KQE"
         };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-bill-tracker';
+        const appId = 'zerodue-fd80c';
         const CATEGORIES = [
             'Utilities', 'Rent/Mortgage', 'Groceries', 'Auto', 'Insurance', 'Medical', 
             'Debt Payment', 'Personal Care', 'Entertainment', 'Education', 'Subscription', 'Other'
@@ -421,9 +439,10 @@
 
         // --- DOM Elements ---
         const DOMElements = {
-            loader: document.getElementById('loader'), mainContent: document.getElementById('mainContent'),
+            loader: document.getElementById('loader'), mainContent: document.getElementById('appContainer'),
             authStatusEl: document.getElementById('authStatus'), tabs: document.querySelectorAll('.tab'),
             unpaidTotalEl: document.getElementById('unpaidTotal'), totalIncomeEl: document.getElementById('totalIncome'), 
+            totalSpentEl: document.getElementById('totalSpent'),
             netBalanceEl: document.getElementById('netBalance'), addBillBtn: document.getElementById('addBillBtn'), 
             addRecurringTemplateBtn: document.getElementById('addRecurringTemplateBtn'), addAccountBtn: document.getElementById('addAccountBtn'), 
             addGoalBtn: document.getElementById('addGoalBtn'), addBudgetBtn: document.getElementById('addBudgetBtn'),
@@ -456,6 +475,10 @@
             calendarGrid: document.getElementById('calendarGrid'), calendarMonthYear: document.getElementById('calendarMonthYear'),
             prevMonthBtn: document.getElementById('prevMonthBtn'), nextMonthBtn: document.getElementById('nextMonthBtn'),
             accountInfo: document.getElementById('accountInfo'),
+            sidebarToggle: document.getElementById('sidebarToggle'),
+            authScreen: document.getElementById('authScreen'),
+            authContainer: document.getElementById('authContainer'),
+            anonSignInBtn: document.getElementById('anonSignInBtn'),
         };
         
         // --- INITIALIZATION ---
@@ -474,8 +497,12 @@
         // --- AUTHENTICATION ---
         function setupAuthentication() {
             onAuthStateChanged(auth, async (user) => {
+                document.getElementById('loader').classList.add('hidden');
                 if (user) {
-                    userId = user.uid; DOMElements.authStatusEl.innerHTML = `<i class="fas fa-check-circle text-green-500"></i> Connected`;
+                    userId = user.uid;
+                    document.getElementById('authScreen').classList.add('hidden');
+                    document.getElementById('appContainer').classList.remove('hidden');
+                    document.getElementById('authStatus').innerHTML = `<i class="fas fa-check-circle text-green-500"></i> Connected`;
                     [unsubscribeBills, unsubscribeTemplates, unsubscribeAccounts, unsubscribeGoals, unsubscribeBudgets, unsubscribeTransactions].forEach(unsub => unsub && unsub());
                     await checkAndGenerateRecurringBills();
                     listenForBills();
@@ -485,15 +512,14 @@
                     listenForBudgets();
                     listenForTransactions();
                     renderAccountInfo();
-                } else { DOMElements.authStatusEl.textContent = "Authenticating..."; await signIn(); }
+                } else { 
+                    document.getElementById('appContainer').classList.add('hidden');
+                    document.getElementById('authScreen').classList.remove('hidden');
+                    renderLoginForm();
+                }
             });
         }
-        async function signIn() {
-             try {
-                await signInAnonymously(auth);
-            } catch (error) { console.error("Authentication failed:", error); DOMElements.authStatusEl.textContent = "Authentication failed."; DOMElements.loader.classList.add('hidden'); }
-        }
-
+        
         // --- DATA LISTENERS ---
         function listenForBills() { if (!userId) return; const q = query(collection(db, `artifacts/${appId}/users/${userId}/bills`), where("isTemplate", "!=", true)); unsubscribeBills = onSnapshot(q, (snapshot) => { allBills = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); renderAll(); }, console.error); }
         function listenForTemplates() { if (!userId) return; const q = query(collection(db, `artifacts/${appId}/users/${userId}/bills`), where("isTemplate", "==", true)); unsubscribeTemplates = onSnapshot(q, (snapshot) => { allTemplates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); renderTemplates(); }, console.error); }
@@ -503,8 +529,6 @@
         function listenForTransactions() { if (!userId) return; const q = query(collection(db, `artifacts/${appId}/users/${userId}/transactions`)); unsubscribeTransactions = onSnapshot(q, (snapshot) => { allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); renderAll(); }, console.error); }
         
         function renderAll() {
-            DOMElements.loader.classList.add('hidden');
-            DOMElements.mainContent.classList.remove('hidden');
             filterAndRender();
             updateDashboard();
             updateNotifications();
@@ -629,12 +653,21 @@
 
         // --- DASHBOARD & CHARTS ---
         function updateDashboard() { 
-            const totalIncome = allAccounts.reduce((sum, acc) => sum + acc.amount, 0);
-            const totalUnpaid = allBills.filter(b => !b.paid).reduce((sum, b) => sum + b.amount, 0);
-            const netBalance = totalIncome - totalUnpaid;
+            const thisMonth = new Date().getMonth(); 
+            const thisYear = new Date().getFullYear();
             
-            DOMElements.totalIncomeEl.textContent = formatCurrency(totalIncome);
-            DOMElements.unpaidTotalEl.textContent = formatCurrency(totalUnpaid);
+            const monthlyIncome = allTransactions
+                .filter(t => t.amount > 0 && t.date?.toDate().getMonth() === thisMonth && t.date?.toDate().getFullYear() === thisYear)
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            const totalSpent = allTransactions
+                .filter(t => t.amount < 0 && t.date?.toDate().getMonth() === thisMonth && t.date?.toDate().getFullYear() === thisYear)
+                .reduce((sum, t) => sum - t.amount, 0);
+
+            const netBalance = monthlyIncome - totalSpent;
+            
+            DOMElements.totalIncomeEl.textContent = formatCurrency(monthlyIncome);
+            DOMElements.totalSpentEl.textContent = formatCurrency(totalSpent);
             DOMElements.netBalanceEl.textContent = formatCurrency(netBalance);
             DOMElements.netBalanceEl.classList.toggle('text-green-600', netBalance >= 0);
             DOMElements.netBalanceEl.classList.toggle('text-red-600', netBalance < 0);
@@ -645,9 +678,9 @@
         function updateCategoryChart() {
             const ctx = document.getElementById('categoryChart').getContext('2d');
             const thisMonth = new Date().getMonth(); const thisYear = new Date().getFullYear();
-            const categoryData = allBills
-                .filter(bill => bill.paid && bill.paidAt?.toDate().getMonth() === thisMonth && bill.paidAt?.toDate().getFullYear() === thisYear)
-                .reduce((acc, bill) => { acc[bill.category] = (acc[bill.category] || 0) + bill.amount; return acc; }, {});
+            const categoryData = allTransactions
+                .filter(t => t.amount < 0 && t.date?.toDate().getMonth() === thisMonth && t.date?.toDate().getFullYear() === thisYear)
+                .reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) - t.amount; return acc; }, {});
             if (categoryChart) categoryChart.destroy();
             categoryChart = new Chart(ctx, {
                 type: 'doughnut', data: { labels: Object.keys(categoryData), datasets: [{ data: Object.values(categoryData), backgroundColor: [ '#3B82F6', '#EF4444', '#8B5CF6', '#F59E0B', '#6366F1', '#6B7280', '#10B981', '#F97316', '#EC4899', '#0EA5E9' ], hoverOffset: 4 }] },
@@ -660,7 +693,8 @@
              for (let i = 5; i >= 0; i--) {
                 const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
                 labels.push(`${d.toLocaleString('default', { month: 'short' })} ${d.getFullYear()}`);
-                data.push(allBills.filter(bill => bill.paid && bill.paidAt?.toDate().getMonth() === d.getMonth() && bill.paidAt?.toDate().getFullYear() === d.getFullYear()).reduce((sum, bill) => sum + bill.amount, 0));
+                const monthExpenses = allTransactions.filter(t => t.amount < 0 && t.date?.toDate().getMonth() === d.getMonth() && t.date?.toDate().getFullYear() === d.getFullYear()).reduce((sum, t) => sum - t.amount, 0);
+                data.push(monthExpenses);
              }
              if(spendingChart) spendingChart.destroy();
              spendingChart = new Chart(ctx, {
@@ -691,7 +725,7 @@
 
         // --- UI & RENDERING ---
         function filterAndRender(){let e=allBills.filter(e=>!e.isTemplate);if(currentSearchTerm){const t=currentSearchTerm.toLowerCase();e=e.filter(e=>e.name.toLowerCase().includes(t)||(e.category&&e.category.toLowerCase().includes(t)))}renderBillLists(e)}
-        function renderBillLists(e){DOMElements.upcomingBillsList.innerHTML="",DOMElements.paidBillsList.innerHTML="";e.sort((e,t)=>new Date(e.dueDate)-new Date(t.dueDate));let o=0,n=0;e.forEach(e=>{const t=createBillElement(e);e.paid?(DOMElements.paidBillsList.prepend(t),n++):(DOMElements.upcomingBillsList.appendChild(t),o++)});DOMElements.noUpcomingBills.classList.toggle("hidden",o>0),DOMElements.noPaidBills.classList.toggle("hidden",n>0),DOMElements.noResultsMessage.classList.toggle("hidden",e.length>0||0===allBills.length)}
+        function renderBillLists(e){DOMElements.upcomingBillsList.innerHTML="",DOMElements.paidBillsList.innerHTML="";e.sort((e,t)=>new Date(e.dueDate)-new Date(t.dueDate));let o=0,n=0;e.forEach(e=>{const t=createBillElement(e);e.paid?(DOMElements.paidBillsList.prepend(t),n++):(DOMElements.upcomingBillsList.appendChild(t),o++)});DOMElements.noUpcomingBills.classList.toggle("hidden",o>0),DOMElements.noPaidBills.classList.toggle("hidden",n>0);DOMElements.noResultsMessage.classList.toggle("hidden",e.length>0||0===allBills.length)}
         function createBillElement(e){const t=document.createElement("div");t.className=`animated-item bill-item bg-white p-4 rounded-lg shadow-sm flex items-center justify-between gap-4 ${e.paid?"opacity-70":""}`;const a=new Date(e.dueDate+"T00:00:00"),o=!e.paid&&new Date>a;let n=e.paid&&e.paidAt?`Paid on ${e.paidAt.toDate().toLocaleDateString()}`:`Due on ${a.toLocaleDateString()}`;return t.innerHTML=`<div class="flex items-center gap-4 flex-grow min-w-0"><button class="toggle-status w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full ${e.paid?"bg-green-100 text-green-600":"border-2 border-gray-300"}" title="${e.paid?"Mark as Unpaid":"Mark as Paid"}"><i class="fas ${e.paid?"fa-check":""}"></i></button><div class="truncate"><div class="flex items-center gap-2"><p class="font-semibold text-gray-800 truncate">${e.name}${e.parentTemplateId?`<i class="fas fa-sync-alt text-blue-500 text-xs ml-2" title="Recurring Bill"></i>`:""}</p><span class="text-xs font-medium px-2 py-0.5 rounded-full ${getCategoryClass(e.category)}">${e.category||"Other"}</span></div><p class="text-sm ${o?"text-red-500 font-medium":"text-gray-500"}">${n} ${o?"(Overdue)":""}</p></div></div><div class="flex items-center gap-2 flex-shrink-0"><p class="font-bold text-lg text-gray-800">${formatCurrency(e.amount)}</p><button class="history-btn text-gray-400 hover:text-green-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200" title="Payment History"><i class="fas fa-history"></i></button><button class="edit-btn text-gray-400 hover:text-blue-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200" title="Edit Bill"><i class="fas fa-pencil-alt"></i></button><button class="delete-btn text-gray-400 hover:text-red-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200" title="Delete Bill"><i class="fas fa-trash-alt"></i></button></div>`,t.querySelector(".toggle-status").addEventListener("click",()=>toggleBillStatus(e,e.paid)),t.querySelector(".history-btn").addEventListener("click",()=>showPaymentHistory(e)),t.querySelector(".edit-btn").addEventListener("click",()=>openEditModal(e,!1)),t.querySelector(".delete-btn").addEventListener("click",()=>deleteItem(e.id,'bills')),t}
         function getCategoryClass(e){return{Utilities:"bg-blue-100 text-blue-800","Rent/Mortgage":"bg-red-100 text-red-800",Subscription:"bg-purple-100 text-purple-800",Groceries:"bg-yellow-100 text-yellow-800",Auto:"bg-indigo-100 text-indigo-800",Insurance:"bg-pink-100 text-pink-800",Medical:"bg-red-100 text-red-800","Debt Payment":"bg-orange-100 text-orange-800","Personal Care":"bg-teal-100 text-teal-800",Entertainment:"bg-green-100 text-green-800",Education:"bg-cyan-100 text-cyan-800",Other:"bg-gray-100 text-gray-800"}[e]||"bg-gray-100 text-gray-800"}
         function renderTemplates(){const e=DOMElements.recurringTemplatesList;e.innerHTML="",DOMElements.noTemplatesMessage.classList.toggle("hidden",allTemplates.length>0),allTemplates.sort((e,t)=>new Date(e.nextDueDate)-new Date(t.nextDueDate)).forEach(t=>{const a=document.createElement("div");a.className="animated-item bg-gray-50 p-4 rounded-lg flex items-center justify-between gap-4",a.innerHTML=`<div class="flex items-center gap-4"><i class="fas fa-sync-alt text-blue-500 fa-2x"></i><div><p class="font-semibold text-gray-800">${t.name}</p><p class="text-sm text-gray-500">Next bill on: ${new Date(t.nextDueDate+"T00:00:00").toLocaleDateString()}</p></div></div><div class="flex items-center gap-4"><p class="font-bold text-lg text-gray-800">${formatCurrency(t.amount)}</p><button class="edit-btn text-gray-400 hover:text-blue-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200" title="Edit Template"><i class="fas fa-pencil-alt"></i></button><button class="delete-btn text-gray-400 hover:text-red-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200" title="Delete Template"><i class="fas fa-trash-alt"></i></button></div>`,a.querySelector(".edit-btn").addEventListener("click",()=>openEditModal(t,!0)),a.querySelector(".delete-btn").addEventListener("click",()=>deleteItem(t.id,'bills')),e.appendChild(a)})}
@@ -876,6 +910,80 @@
                 errorEl.classList.remove('hidden');
             }
         }
+         function renderLoginForm() {
+             DOMElements.authContainer.innerHTML = `
+                <div class="flex border-b">
+                    <button id="loginTab" class="flex-1 py-2 font-semibold border-b-2 border-blue-600">Log In</button>
+                    <button id="signupTab" class="flex-1 py-2 font-semibold text-gray-500">Sign Up</button>
+                </div>
+                <form id="loginForm" class="space-y-4 mt-4">
+                    <div>
+                        <label for="loginEmail" class="block text-sm font-medium">Email</label>
+                        <input type="email" id="loginEmail" required class="mt-1 block w-full input-field">
+                    </div>
+                    <div>
+                        <label for="loginPassword" class="block text-sm font-medium">Password</label>
+                        <input type="password" id="loginPassword" required class="mt-1 block w-full input-field">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700">Log In</button>
+                    <p id="loginError" class="text-red-500 text-sm mt-2 hidden"></p>
+                </form>
+            `;
+            document.getElementById('loginTab').addEventListener('click', renderLoginForm);
+            document.getElementById('signupTab').addEventListener('click', renderSignUpForm);
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        }
+         function renderSignUpForm() {
+             DOMElements.authContainer.innerHTML = `
+                <div class="flex border-b">
+                    <button id="loginTab" class="flex-1 py-2 font-semibold text-gray-500">Log In</button>
+                    <button id="signupTab" class="flex-1 py-2 font-semibold border-b-2 border-blue-600">Sign Up</button>
+                </div>
+                <form id="signupForm" class="space-y-4 mt-4">
+                     <div>
+                        <label for="signupEmail" class="block text-sm font-medium">Email</label>
+                        <input type="email" id="signupEmail" required class="mt-1 block w-full input-field">
+                    </div>
+                    <div>
+                        <label for="signupPassword" class="block text-sm font-medium">Password</label>
+                        <input type="password" id="signupPassword" required class="mt-1 block w-full input-field">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700">Sign Up</button>
+                    <p id="signupError" class="text-red-500 text-sm mt-2 hidden"></p>
+                </form>
+            `;
+            document.getElementById('loginTab').addEventListener('click', renderLoginForm);
+            document.getElementById('signupTab').addEventListener('click', renderSignUpForm);
+            document.getElementById('signupForm').addEventListener('submit', handleSignUp);
+        }
+        async function handleLogin(e){
+            e.preventDefault();
+            const email = e.target.loginEmail.value;
+            const password = e.target.loginPassword.value;
+            const errorEl = document.getElementById('loginError');
+            errorEl.classList.add('hidden');
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch(error) {
+                console.error("Login failed:", error);
+                errorEl.textContent = error.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+        async function handleSignUp(e) {
+            e.preventDefault();
+            const email = e.target.signupEmail.value;
+            const password = e.target.signupPassword.value;
+            const errorEl = document.getElementById('signupError');
+            errorEl.classList.add('hidden');
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+            } catch(error) {
+                console.error("Sign up failed:", error);
+                errorEl.textContent = error.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
         // --- EVENT LISTENERS & UI ---
         function setupEventListeners() {
             DOMElements.tabs.forEach(tab => {
@@ -914,6 +1022,10 @@
             DOMElements.generateReportBtn.addEventListener('click', generatePrintableReport);
             DOMElements.prevMonthBtn.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendar(); });
             DOMElements.nextMonthBtn.addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendar(); });
+            DOMElements.sidebarToggle.addEventListener('click', () => {
+                document.body.classList.toggle('sidebar-collapsed');
+            });
+             DOMElements.anonSignInBtn.addEventListener('click', () => signInAnonymously(auth));
         }
 
         function closeAddBillModal() { DOMElements.addBillModal.classList.add('hidden'); }
